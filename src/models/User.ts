@@ -14,10 +14,12 @@ export interface UserInstance extends Model<UserAttributes, Optional<UserAttribu
   updatedAt?: Date;
 }
 
-export const User = sequelize.define<UserInstance>('user', {
+const User = sequelize.define<UserInstance>('user', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
   email: { type: DataTypes.STRING, allowNull: false, unique: true },
   password: { type: DataTypes.STRING, allowNull: false },
   isActivated: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
   activationLink: { type: DataTypes.STRING, allowNull: true },
 });
+
+export default User;

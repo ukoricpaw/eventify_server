@@ -1,4 +1,4 @@
-import { User } from '../models/User.js';
+import User from '../models/User.js';
 import ApiError from '../error/ApiError.js';
 import bcrypt from 'bcrypt';
 import { v4 } from 'uuid';

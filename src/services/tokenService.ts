@@ -1,5 +1,5 @@
-import { Token } from '../models/Token.js';
-import { User } from '../models/User.js';
+import Token from '../models/Token.js';
+import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import ApiError from '../error/ApiError.js';

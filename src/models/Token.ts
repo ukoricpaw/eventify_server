@@ -12,8 +12,10 @@ interface TokenInstance extends Model<TokenAttributes, Optional<TokenAttributes,
   updatedAt?: Date;
 }
 
-export const Token = sequelize.define<TokenInstance>('token', {
+const Token = sequelize.define<TokenInstance>('token', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
   refreshToken: { type: DataTypes.STRING, allowNull: false },
   userId: { type: DataTypes.INTEGER, allowNull: false },
 });
+
+export default Token;

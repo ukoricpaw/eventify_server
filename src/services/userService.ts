@@ -7,14 +7,20 @@ import tokenService from './tokenService.js';
 import mailService from './mailService.js';
 
 class UserService {
-  async registration(email: string, password: string) {
+  async registration(email: string, password: string, role: 'ADMIN' | 'USER') {
     const candidate = await User.findOne({ where: { email } });
     if (candidate) {
       throw ApiError.BadRequest('Пользователь с таким email уже существует');
     }
     const activationLink = v4();
     const hashedPassword = await bcrypt.hash(password, 5);
-    const user = await User.create({ email, password: hashedPassword, activationLink, isActivated: false });
+    const user = await User.create({
+      email,
+      password: hashedPassword,
+      activationLink,
+      isActivated: false,
+      role,
+    });
     await mailService.sendMail(user.email, user.activationLink as string);
     const userDto = new UserDto(user);
     const tokens = await tokenService.generateToken({ ...userDto });

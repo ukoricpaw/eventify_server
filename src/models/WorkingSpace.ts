@@ -4,7 +4,7 @@ import { Model, Optional, DataTypes } from 'sequelize';
 interface WorkingSpaceAttributes {
   id: number;
   name: string;
-  description: string;
+  description?: string;
   private: boolean;
   userId: number;
 }
@@ -19,7 +19,7 @@ interface WorkingSpaceInstance
 const WorkingSpace = sequelize.define<WorkingSpaceInstance>('working_space', {
   id: { type: DataTypes.INTEGER, primaryKey: true, allowNull: false, autoIncrement: true },
   name: { type: DataTypes.STRING, allowNull: false },
-  description: { type: DataTypes.STRING, allowNull: false },
+  description: { type: DataTypes.STRING, allowNull: true },
   private: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
   userId: { type: DataTypes.INTEGER, allowNull: false },
 });

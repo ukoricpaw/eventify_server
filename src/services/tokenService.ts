@@ -9,6 +9,7 @@ dotenv.config();
 export interface UserPayload {
   id: number;
   email: string;
+  role: 'ADMIN' | 'USER';
 }
 
 class TokenService {
@@ -52,7 +53,7 @@ class TokenService {
     if (!user) {
       throw ApiError.NotAuthorized('Ошибка запроса');
     }
-    const tokenData = await this.generateToken({ id: user.id, email: user.email });
+    const tokenData = await this.generateToken({ id: user.id, email: user.email, role: user.role });
     const userDto = new UserDto(user);
     await this.insertRefreshToken(user.id, tokenData.refreshToken);
     return { ...tokenData, user: { ...userDto } };

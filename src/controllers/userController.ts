@@ -11,8 +11,8 @@ class UserController {
       if (!errors.isEmpty()) {
         throw ApiError.BadRequest('Некорректные данные');
       }
-      const { email, password } = req.body;
-      const tokenData = await userService.registration(email, password);
+      const { email, password, role } = req.body;
+      const tokenData = await userService.registration(email, password, role);
       res.cookie('refreshToken', tokenData.refreshToken, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true });
       res.json(tokenData);
     } catch (err) {
@@ -43,6 +43,7 @@ class UserController {
       res.cookie('refreshToken', tokenData.refreshToken, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true });
       res.json(tokenData);
     } catch (err) {
+      console.log(err);
       next(err);
     }
   }

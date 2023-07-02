@@ -17,7 +17,7 @@ interface DeskListItemInstance
   updatedAt?: Date;
 }
 
-const DeskListItem = sequelize.define<DeskListItemInstance>('desk_list', {
+const DeskListItem = sequelize.define<DeskListItemInstance>('desk_list_item', {
   id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true, allowNull: false },
   name: { type: DataTypes.STRING, allowNull: false },
   description: { type: DataTypes.STRING, allowNull: false },

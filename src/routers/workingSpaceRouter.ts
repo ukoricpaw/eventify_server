@@ -3,9 +3,11 @@ import checkAuthMiddleware from '../middlewares/checkAuthMiddleware.js';
 import workingSpaceController from '../controllers/workingSpaceController.js';
 import checkRoleMiddeware from '../middlewares/checkRoleMiddleware.js';
 import checkUserMiddleware from '../middlewares/checkUserMiddleware.js';
+import deskRouter from './deskRouter.js';
 
 const workingSpaceRouter = Router();
 
+workingSpaceRouter.use('/desk', deskRouter);
 workingSpaceRouter.post('/', checkAuthMiddleware, workingSpaceController.addNewWorkingSpace);
 workingSpaceRouter.put('/:id', checkAuthMiddleware, workingSpaceController.updateWorkingSpace);
 workingSpaceRouter.delete('/:id', checkAuthMiddleware, workingSpaceController.deleteWorkingSpace);

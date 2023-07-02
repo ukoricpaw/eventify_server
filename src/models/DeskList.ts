@@ -7,6 +7,7 @@ interface DeskListAttributes {
   description: string;
   order: number;
   deskId: number;
+  isarchived?: boolean;
 }
 
 interface DeskListInstance extends Model<DeskListAttributes, Optional<DeskListAttributes, 'id'>>, DeskListAttributes {
@@ -19,6 +20,7 @@ const DeskList = sequelize.define<DeskListInstance>('desk_list', {
   name: { type: DataTypes.STRING, allowNull: false },
   description: { type: DataTypes.STRING, allowNull: false },
   order: { type: DataTypes.INTEGER, allowNull: false },
+  isarchived: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
   deskId: { type: DataTypes.INTEGER, allowNull: false },
 });
 

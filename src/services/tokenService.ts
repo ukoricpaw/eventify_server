@@ -1,10 +1,8 @@
 import Token from '../models/Token.js';
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
-import dotenv from 'dotenv';
 import ApiError from '../error/ApiError.js';
 import UserDto from '../dtos/UserDto.js';
-dotenv.config();
 
 export interface UserPayload {
   id: number;

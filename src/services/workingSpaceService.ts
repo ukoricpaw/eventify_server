@@ -7,8 +7,8 @@ import User from '../models/User.js';
 
 class WorkingSpaceService {
   async addNewWorkingSpace(name: string, description: string | undefined, userId: number) {
-    const workingSpaces = await WorkingSpace.findAndCountAll({ where: { userId } });
-    if (workingSpaces.count > 4) {
+    const workingSpaces = await WorkingSpace.count({ where: { userId } });
+    if (workingSpaces > 4) {
       throw ApiError.BadRequest('Превышен лимит рабочих пространств');
     }
     const newWorkingSpace = await WorkingSpace.create({ name, description, userId, private: true });

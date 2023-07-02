@@ -4,9 +4,9 @@ import sequelize from '../db.js';
 interface DeskAttributes {
   id: number;
   name: string;
-  description: string;
-  background: string;
-  isarchived: boolean;
+  description?: string;
+  background?: string | null;
+  workingSpaceId: number;
 }
 
 interface DeskInstance extends Model<DeskAttributes, Optional<DeskAttributes, 'id'>>, DeskAttributes {
@@ -17,9 +17,9 @@ interface DeskInstance extends Model<DeskAttributes, Optional<DeskAttributes, 'i
 const Desk = sequelize.define<DeskInstance>('desk', {
   id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true, allowNull: false },
   name: { type: DataTypes.STRING, allowNull: false },
-  description: { type: DataTypes.STRING, allowNull: false },
+  description: { type: DataTypes.STRING, allowNull: true },
   background: { type: DataTypes.STRING, allowNull: true },
-  isarchived: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+  workingSpaceId: { type: DataTypes.INTEGER, allowNull: false },
 });
 
 export default Desk;

@@ -1,7 +1,5 @@
 import { createTransport } from 'nodemailer';
-import dotenv from 'dotenv';
 import User from '../models/User.js';
-dotenv.config();
 
 class MailService {
   public transporter;

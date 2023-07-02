@@ -7,8 +7,7 @@ interface DeskStoryAttribute {
   deskActId: number;
   deskId: number;
   firstItem: string;
-  secondItem?: string;
-  description: string;
+  secondItem?: string | null;
 }
 
 interface DeskStoryInstance extends Model<DeskStoryAttribute, Optional<DeskStoryAttribute, 'id'>>, DeskStoryAttribute {
@@ -23,7 +22,6 @@ const DeskStory = sequelize.define<DeskStoryInstance>('desk_story', {
   deskId: { type: DataTypes.INTEGER, allowNull: false },
   firstItem: { type: DataTypes.STRING, allowNull: false },
   secondItem: { type: DataTypes.STRING, allowNull: true },
-  description: { type: DataTypes.STRING, allowNull: false },
 });
 
 export default DeskStory;

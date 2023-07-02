@@ -16,7 +16,7 @@ const checkUserMiddleware = (req: ReqWithUserPayload, res: Response, next: NextF
     }
     next();
   } catch (err) {
-    return res.status(401).json({ message: 'Произошла ошибка' });
+    next();
   }
 };
 

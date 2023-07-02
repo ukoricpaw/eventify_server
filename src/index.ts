@@ -1,17 +1,18 @@
+import 'dotenv/config';
 import express, { Application } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import sequelize from './db.js';
-import dotenv from 'dotenv';
 import models from './models/models.js';
 import router from './routers/index.js';
 import errorHandlerMiddleware from './middlewares/errorHandlerMiddleware.js';
+import fileUpload from 'express-fileupload';
 
-dotenv.config();
 const PORT = process.env.PORT || 5000;
 
 const app: Application = express();
 app.use(cors());
+app.use(fileUpload({}));
 app.use(cookieParser());
 app.use(express.json());
 app.use('/api', router);

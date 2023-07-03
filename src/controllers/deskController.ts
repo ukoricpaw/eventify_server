@@ -24,7 +24,6 @@ class DeskController {
       const newDesk = await deskService.addNewDesk(Number(id), Number(req.user.id), name, description, img);
       res.json(newDesk);
     } catch (err) {
-      console.log(err);
       next(err);
     }
   }

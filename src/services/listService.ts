@@ -97,24 +97,38 @@ class ListService {
     if (list.order === order) {
       throw ApiError.BadRequest('Ошибка запроса');
     }
-    console.log(order);
     const listCount = await DeskList.count({ where: { deskId } });
     if (order < 1 || order > listCount) {
       throw ApiError.BadRequest('Ошибка запроса');
     }
-    list.order = order;
-    const lists = await DeskList.findAll({
-      where: {
-        deskId,
-        order: {
-          [Op.gte]: order,
+    if (order < list.order) {
+      const lists = await DeskList.findAll({
+        where: {
+          deskId,
+          order: {
+            [Op.gte]: order,
+          },
         },
-      },
-    });
-    lists.forEach(list => {
-      list.order++;
-      list.save();
-    });
+      });
+      lists.forEach(list => {
+        list.order++;
+        list.save();
+      });
+    } else if (order > list.order) {
+      const lists = await DeskList.findAll({
+        where: {
+          deskId,
+          order: {
+            [Op.lte]: order,
+          },
+        },
+      });
+      lists.forEach(list => {
+        list.order--;
+        list.save();
+      });
+    }
+    list.order = order;
     await list.save();
     return { message: 'порядок изменён' };
   }

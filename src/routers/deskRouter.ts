@@ -3,8 +3,10 @@ import checkAuthMiddleware from '../middlewares/checkAuthMiddleware.js';
 import checkUserMiddleware from '../middlewares/checkUserMiddleware.js';
 import deskController from '../controllers/deskController.js';
 import checkRoleMiddeware from '../middlewares/checkRoleMiddleware.js';
+import listRouter from './listRouter.js';
 
 const deskRouter = Router();
+deskRouter.use('/list', listRouter);
 deskRouter.post('/:id', checkAuthMiddleware, deskController.addNewDesk);
 deskRouter.put('/:wsid/:id', checkAuthMiddleware, deskController.updateDesk);
 deskRouter.delete('/:wsid/:id', checkAuthMiddleware, deskController.deleteDesk);

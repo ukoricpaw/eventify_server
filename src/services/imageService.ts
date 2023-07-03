@@ -1,6 +1,5 @@
 import { uploadBytes, deleteObject, ref, getDownloadURL } from 'firebase/storage';
 import storage from '../firebase.js';
-import ApiError from '../error/ApiError.js';
 
 const metadata = {
   contentType: 'image/png',

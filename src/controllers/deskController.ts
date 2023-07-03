@@ -74,6 +74,7 @@ class DeskController {
   async getDesk(req: ReqWithUserPayload, res: Response, next: NextFunction) {
     try {
       const { wsid, id } = req.params;
+      const { archive } = req.query;
       if (!wsid || !id) {
         throw ApiError.BadRequest('Ошибка запроса');
       }
@@ -81,7 +82,11 @@ class DeskController {
       if (req.user) {
         userId = req.user.id;
       }
-      const desk = await deskService.getFullDesk(Number(wsid), Number(id), userId);
+      let isArchived: true | null = null;
+      if (archive === 'true') {
+        isArchived = true;
+      }
+      const desk = await deskService.getFullDesk(Number(wsid), Number(id), userId, isArchived);
       res.json(desk);
     } catch (err) {
       next(err);

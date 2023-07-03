@@ -53,6 +53,10 @@ class DeskService {
 
   async addNewDesk(wsId: number, userId: number, name: string, description?: string, background?: UploadedFile) {
     await this.checkWSAndRole(wsId, userId, null);
+    const desks = await Desk.count({ where: { workingSpaceId: wsId } });
+    if (desks > 14) {
+      throw ApiError.BadRequest('Превышен лимит досок');
+    }
     let backgroundUrl: undefined | string;
     if (background) {
       backgroundUrl = v4() + '.jpg';
@@ -63,24 +67,55 @@ class DeskService {
     return newDesk;
   }
 
-  async searchDesk(deskId: number, wsId: number, getFull: null | true) {
+  async searchDesk(deskId: number, wsId: number, getFull: null | true, archive: true | null) {
     let desk = null;
     if (getFull) {
-      desk = await Desk.findOne({
-        where: { id: deskId, workingSpaceId: wsId },
-        include: [
-          {
-            model: DeskList,
-            required: false,
-            include: [
-              {
-                model: DeskListItem,
-                required: false,
+      if (archive) {
+        desk = await Desk.findOne({
+          order: [[{ model: DeskList, as: 'desk_lists' }, 'order', 'ASC']],
+          where: { id: deskId, workingSpaceId: wsId },
+          include: [
+            {
+              model: DeskList,
+              as: 'desk_lists',
+              where: {
+                isarchived: archive,
               },
-            ],
-          },
-        ],
-      });
+              order: [[{ model: DeskListItem, as: 'desk_list_items' }, 'order', 'ASC']],
+              required: false,
+              include: [
+                {
+                  model: DeskListItem,
+                  required: false,
+                },
+              ],
+            },
+          ],
+        });
+      } else {
+        desk = await Desk.findOne({
+          where: { id: deskId, workingSpaceId: wsId },
+          order: [[{ model: DeskList, as: 'desk_lists' }, 'order', 'ASC']],
+          include: [
+            {
+              model: DeskList,
+              required: false,
+              where: {
+                isarchived: false,
+              },
+              as: 'desk_lists',
+              order: [[{ model: DeskListItem, as: 'desk_list_items' }, 'order', 'ASC']],
+              include: [
+                {
+                  model: DeskListItem,
+                  as: 'desk_list_items',
+                  required: false,
+                },
+              ],
+            },
+          ],
+        });
+      }
     } else {
       desk = await Desk.findOne({ where: { id: deskId, workingSpaceId: wsId } });
     }
@@ -100,7 +135,7 @@ class DeskService {
     delete_img?: boolean,
   ) {
     await this.checkWSAndRole(wsId, userId, null);
-    const desk = await this.searchDesk(deskId, wsId, null);
+    const desk = await this.searchDesk(deskId, wsId, null, null);
     desk.name = name || desk.name;
     desk.description = description || desk.description;
     if (delete_img) {
@@ -128,7 +163,7 @@ class DeskService {
 
   async deleteDesk(wsId: number, deskId: number, userId: number) {
     await this.checkWSAndRole(wsId, userId, null);
-    const desk = await this.searchDesk(deskId, wsId, null);
+    const desk = await this.searchDesk(deskId, wsId, null, null);
     if (desk.background) {
       imageService.deleteFile(desk.background);
     }
@@ -136,9 +171,9 @@ class DeskService {
     return { message: 'доска была удалена' };
   }
 
-  async getFullDesk(wsId: number, deskId: number, userId: number | null) {
+  async getFullDesk(wsId: number, deskId: number, userId: number | null, archive: true | null) {
     await this.checkWSAndRole(wsId, userId, true);
-    const desk = await this.searchDesk(deskId, wsId, true);
+    const desk = await this.searchDesk(deskId, wsId, true, archive);
     return desk;
   }
 

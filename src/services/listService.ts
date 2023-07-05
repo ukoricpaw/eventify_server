@@ -79,10 +79,12 @@ class ListService {
         },
       },
     });
-    lists.forEach(list => {
-      list.order--;
-      list.save();
-    });
+    if (lists) {
+      lists.forEach(list => {
+        list.order--;
+        list.save();
+      });
+    }
     deskService.addStoryItem(userId, 6, deskId, list.name, null);
     await list.destroy();
     return { message: 'Список был удалён' };
@@ -106,7 +108,7 @@ class ListService {
         where: {
           deskId,
           order: {
-            [Op.gte]: order,
+            [Op.between]: [order, list.order],
           },
         },
       });
@@ -119,7 +121,7 @@ class ListService {
         where: {
           deskId,
           order: {
-            [Op.lte]: order,
+            [Op.between]: [list.order, order],
           },
         },
       });
@@ -130,7 +132,7 @@ class ListService {
     }
     list.order = order;
     await list.save();
-    return { message: 'порядок изменён' };
+    return { message: 'Порядок изменён' };
   }
 }
 

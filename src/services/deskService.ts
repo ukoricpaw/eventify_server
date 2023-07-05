@@ -87,6 +87,9 @@ class DeskService {
                 {
                   model: DeskListItem,
                   required: false,
+                  attributes: {
+                    exclude: ['createdAt', 'updatedAt', 'id', 'deskListId'],
+                  },
                 },
               ],
             },
@@ -95,7 +98,11 @@ class DeskService {
       } else {
         desk = await Desk.findOne({
           where: { id: deskId, workingSpaceId: wsId },
-          order: [[{ model: DeskList, as: 'desk_lists' }, 'order', 'ASC']],
+          order: [
+            [{ model: DeskList, as: 'desk_lists' }, 'order', 'ASC'],
+            [{ model: DeskList, as: 'desk_lists' }, { model: DeskListItem, as: 'desk_list_items' }, 'order', 'ASC'],
+          ],
+
           include: [
             {
               model: DeskList,
@@ -104,11 +111,14 @@ class DeskService {
                 isarchived: false,
               },
               as: 'desk_lists',
-              order: [[{ model: DeskListItem, as: 'desk_list_items' }, 'order', 'ASC']],
               include: [
                 {
                   model: DeskListItem,
+                  order: [['order', 'ASC']],
                   as: 'desk_list_items',
+                  attributes: {
+                    exclude: ['createdAt', 'updatedAt', 'deskListId'],
+                  },
                   required: false,
                 },
               ],

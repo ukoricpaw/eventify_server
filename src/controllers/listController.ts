@@ -62,7 +62,6 @@ class ListController {
       const message = await listService.changeOrder(Number(wsid), Number(deskid), req.user.id, Number(id), order);
       res.json(message);
     } catch (err) {
-      console.log(err);
       next(err);
     }
   }

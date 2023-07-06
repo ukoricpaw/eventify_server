@@ -8,7 +8,7 @@ interface UserAttributes {
   isActivated: boolean;
   activationLink: string | null;
   role: 'ADMIN' | 'USER';
-  avatar?: string;
+  avatar?: string | null;
 }
 
 export interface UserInstance extends Model<UserAttributes, Optional<UserAttributes, 'id'>>, UserAttributes {

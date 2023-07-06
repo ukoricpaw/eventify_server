@@ -10,6 +10,7 @@ import DeskListItem from '../models/DeskItem.js';
 import DeskAct from '../models/DeskAct.js';
 import DeskStory from '../models/DeskStory.js';
 import User from '../models/User.js';
+import { userAttributes } from './workingSpaceService.js';
 
 class DeskService {
   async addStoryItem(userId: number, deskActId: number, deskId: number, firstItem: string, secondItem: string | null) {
@@ -213,9 +214,7 @@ class DeskService {
         {
           model: User,
           as: 'user',
-          attributes: {
-            exclude: ['createdAt', 'updatedAt', 'activationLink', 'isActivated', 'password', 'role'],
-          },
+          attributes: userAttributes,
         },
         {
           model: DeskAct,

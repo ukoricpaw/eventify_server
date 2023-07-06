@@ -2,6 +2,7 @@ import { Response, NextFunction, Request } from 'express';
 import ApiError from '../error/ApiError.js';
 import { ReqWithUserPayload } from '../middlewares/checkAuthMiddleware.js';
 import workingSpaceService from '../services/workingSpaceService.js';
+import getQueryParameters from '../utils/getQueryParameters.js';
 class WorkingSpaceController {
   async addNewWorkingSpace(req: ReqWithUserPayload, res: Response, next: NextFunction) {
     try {
@@ -80,11 +81,17 @@ class WorkingSpaceController {
 
   async getAllPublicWS(req: Request, res: Response, next: NextFunction) {
     try {
-      let { limit, page } = req.query;
-      limit = limit || (8).toString();
-      page = page || (1).toString();
-      const offset = Number(limit) * Number(page) - Number(limit);
-      const workingSpaces = await workingSpaceService.getAllPublicWorkingSpaces(offset, Number(limit));
+      const { limit, page, search } = req.query;
+      const queryParams = getQueryParameters(
+        limit as string | undefined,
+        page as string | undefined,
+        search as string | undefined,
+      );
+      const workingSpaces = await workingSpaceService.getAllPublicWorkingSpaces(
+        queryParams.offset,
+        Number(queryParams.limit),
+        queryParams.search,
+      );
       res.json(workingSpaces);
     } catch (err) {
       next(err);
@@ -93,11 +100,17 @@ class WorkingSpaceController {
 
   async getAllPrivateWS(req: ReqWithUserPayload, res: Response, next: NextFunction) {
     try {
-      let { limit, page } = req.query;
-      limit = limit || (8).toString();
-      page = page || (1).toString();
-      const offset = Number(limit) * Number(page) - Number(limit);
-      const workingSpaces = await workingSpaceService.getAllPrivateWorkingSpaces(offset, Number(limit));
+      const { limit, page, search } = req.query;
+      const queryParams = getQueryParameters(
+        limit as string | undefined,
+        page as string | undefined,
+        search as string | undefined,
+      );
+      const workingSpaces = await workingSpaceService.getAllPrivateWorkingSpaces(
+        queryParams.offset,
+        Number(queryParams.limit),
+        queryParams.search,
+      );
       res.json(workingSpaces);
     } catch (err) {
       next(err);
@@ -112,6 +125,49 @@ class WorkingSpaceController {
       }
       const message = await workingSpaceService.inviteUserToWS(req.user.id, link);
       res.json(message);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async changePermission(req: ReqWithUserPayload, res: Response, next: NextFunction) {
+    try {
+      const id = req.params.id;
+      const { roleId, userId } = req.body;
+      if (!roleId || !req.user || !userId) {
+        throw ApiError.BadRequest('Ошибка запроса');
+      }
+      const message = await workingSpaceService.changePermission(Number(id), req.user.id, userId, roleId);
+      res.json(message);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getAllWSUsers(req: ReqWithUserPayload, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const { limit, page, search } = req.query;
+      const queryParams = getQueryParameters(
+        limit as string | undefined,
+        page as string | undefined,
+        search as string | undefined,
+      );
+      if (!id) {
+        throw ApiError.BadRequest('Ошибка запроса');
+      }
+      let userId = null;
+      if (req.user) {
+        userId = req.user.id;
+      }
+      const users = await workingSpaceService.getAllWSUsers(
+        Number(id),
+        userId,
+        Number(queryParams.offset),
+        Number(queryParams.limit),
+        queryParams.search,
+      );
+      res.json(users);
     } catch (err) {
       next(err);
     }

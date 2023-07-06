@@ -4,6 +4,8 @@ import ApiError from '../error/ApiError.js';
 import { validationResult } from 'express-validator';
 import mailService from '../services/mailService.js';
 import tokenService from '../services/tokenService.js';
+import { ReqWithUserPayload } from '../middlewares/checkAuthMiddleware.js';
+import { UploadedFile } from 'express-fileupload';
 class UserController {
   public async registration(req: Request, res: Response, next: NextFunction) {
     try {
@@ -15,6 +17,27 @@ class UserController {
       const tokenData = await userService.registration(email, password, role);
       res.cookie('refreshToken', tokenData.refreshToken, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true });
       res.json(tokenData);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  public async updateUser(req: ReqWithUserPayload, res: Response, next: NextFunction) {
+    try {
+      const { delete_img } = req.body;
+      let image = null;
+      if (!req.user) {
+        throw ApiError.BadRequest('Пользователь не авторизован');
+      }
+      if (req.files) {
+        image = req.files.avatar as UploadedFile;
+      }
+      let rmImage = null;
+      if (delete_img === 'true') {
+        rmImage = true;
+      }
+      const updatedUser = await userService.updateUser(req.user.id, image, rmImage);
+      res.json(updatedUser);
     } catch (err) {
       next(err);
     }
@@ -70,6 +93,23 @@ class UserController {
       }
       const message = await tokenService.deleteToken(refreshToken);
       res.clearCookie('refreshToken');
+      res.json(message);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  public async changePassword(req: ReqWithUserPayload, res: Response, next: NextFunction) {
+    try {
+      const { oldPassword, newPassword } = req.body;
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        throw ApiError.BadRequest('Некорректно ввёденные данные');
+      }
+      if (!oldPassword || !newPassword || !req.user) {
+        throw ApiError.BadRequest('Некорректные данные');
+      }
+      const message = await userService.changeUserPassword(req.user.id, oldPassword, newPassword);
       res.json(message);
     } catch (err) {
       next(err);

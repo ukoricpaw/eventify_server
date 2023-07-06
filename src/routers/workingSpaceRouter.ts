@@ -15,5 +15,6 @@ workingSpaceRouter.get('/:id', checkUserMiddleware, workingSpaceController.getSi
 workingSpaceRouter.get('/get/all', checkAuthMiddleware, workingSpaceController.getAllWorkingSpaces);
 workingSpaceRouter.get('/getall/public', workingSpaceController.getAllPublicWS);
 workingSpaceRouter.get('/getall/private', checkRoleMiddeware('ADMIN'), workingSpaceController.getAllPrivateWS);
+workingSpaceRouter.get('/invite/:link', checkAuthMiddleware, workingSpaceController.inviteUserToWS);
 
 export default workingSpaceRouter;

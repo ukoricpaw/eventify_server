@@ -6,7 +6,6 @@ import DeskList from './DeskList.js';
 import DeskListItem from './DeskItem.js';
 import WorkingSpaceRole from './WorkingSpaceRole.js';
 import Role from './Role.js';
-import Invitation from './Invitation.js';
 import DeskAct from './DeskAct.js';
 import DeskStory from './DeskStory.js';
 
@@ -81,24 +80,6 @@ WorkingSpaceRole.belongsTo(Role, {
   foreignKey: 'roleId',
 });
 
-User.hasMany(Invitation, {
-  sourceKey: 'id',
-  foreignKey: 'userId',
-});
-
-Invitation.belongsTo(User, {
-  foreignKey: 'userId',
-});
-
-WorkingSpace.hasMany(Invitation, {
-  sourceKey: 'id',
-  foreignKey: 'workingSpaceId',
-});
-
-Invitation.belongsTo(WorkingSpace, {
-  foreignKey: 'workingSpaceId',
-});
-
 DeskAct.hasMany(DeskStory, {
   sourceKey: 'id',
   foreignKey: 'deskActId',
@@ -136,5 +117,4 @@ export default {
   Role,
   DeskAct,
   DeskStory,
-  Invitation,
 };

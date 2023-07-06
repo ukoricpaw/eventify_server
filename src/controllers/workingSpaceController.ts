@@ -103,6 +103,19 @@ class WorkingSpaceController {
       next(err);
     }
   }
+
+  async inviteUserToWS(req: ReqWithUserPayload, res: Response, next: NextFunction) {
+    try {
+      const { link } = req.params;
+      if (!link || !req.user) {
+        throw ApiError.BadRequest('Некорректная ссылка');
+      }
+      const message = await workingSpaceService.inviteUserToWS(req.user.id, link);
+      res.json(message);
+    } catch (err) {
+      next(err);
+    }
+  }
 }
 
 export default new WorkingSpaceController();

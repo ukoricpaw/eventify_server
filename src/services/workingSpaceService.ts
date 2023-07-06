@@ -4,6 +4,7 @@ import ApiError from '../error/ApiError.js';
 import Desk from '../models/Desk.js';
 import Role from '../models/Role.js';
 import User from '../models/User.js';
+import { v4 } from 'uuid';
 
 class WorkingSpaceService {
   async addNewWorkingSpace(name: string, description: string | undefined, userId: number) {
@@ -11,7 +12,8 @@ class WorkingSpaceService {
     if (workingSpaces > 4) {
       throw ApiError.BadRequest('Превышен лимит рабочих пространств');
     }
-    const newWorkingSpace = await WorkingSpace.create({ name, description, userId, private: true });
+    const inviteLink = v4();
+    const newWorkingSpace = await WorkingSpace.create({ name, description, userId, private: true, inviteLink });
     const role = await WorkingSpaceRole.create({ workingSpaceId: newWorkingSpace.id, userId, roleId: 1 });
     return { newWorkingSpace, role };
   }
@@ -58,25 +60,6 @@ class WorkingSpaceService {
   }
 
   async getSinglePublicWS(userId: number | null, workingSpaceId: number) {
-    const workingSpace = await WorkingSpace.findOne({
-      where: { id: workingSpaceId },
-      include: [
-        { model: Desk, as: 'desks', required: false },
-        {
-          model: User,
-          as: 'user',
-          attributes: {
-            exclude: ['password', 'isActivated', 'role', 'createdAt', 'updatedAt', 'activationLink'],
-          },
-        },
-      ],
-      attributes: {
-        exclude: ['createdAt', 'updatedAt', 'userId'],
-      },
-    });
-    if (!workingSpace) {
-      throw ApiError.BadRequest('Ошибка запроса');
-    }
     let workingSpaceRole = null;
     if (userId) {
       workingSpaceRole = await WorkingSpaceRole.findOne({
@@ -89,13 +72,51 @@ class WorkingSpaceService {
           as: 'role',
         },
         attributes: {
-          exclude: ['roleId', 'createdAt', 'updatedAt', 'id'],
+          exclude: ['createdAt', 'updatedAt', 'id'],
         },
       });
-
-      if (!workingSpaceRole && workingSpace.private) {
-        throw ApiError.BadRequest('У Вас нет доступа к данному рабочему пространству');
-      }
+    }
+    let workingSpace = null;
+    if (workingSpaceRole && (workingSpaceRole.roleId === 1 || workingSpaceRole.roleId === 2)) {
+      workingSpace = await WorkingSpace.findOne({
+        where: { id: workingSpaceId },
+        include: [
+          { model: Desk, as: 'desks', required: false },
+          {
+            model: User,
+            as: 'user',
+            attributes: {
+              exclude: ['password', 'isActivated', 'role', 'createdAt', 'updatedAt', 'activationLink'],
+            },
+          },
+        ],
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'userId'],
+        },
+      });
+    } else {
+      workingSpace = await WorkingSpace.findOne({
+        where: { id: workingSpaceId },
+        include: [
+          { model: Desk, as: 'desks', required: false },
+          {
+            model: User,
+            as: 'user',
+            attributes: {
+              exclude: ['password', 'isActivated', 'role', 'createdAt', 'updatedAt', 'activationLink'],
+            },
+          },
+        ],
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'userId', 'inviteLink'],
+        },
+      });
+    }
+    if (!workingSpace) {
+      throw ApiError.BadRequest('Ошибка запроса');
+    }
+    if (!workingSpaceRole && workingSpace.private) {
+      throw ApiError.BadRequest('У Вас нет доступа к данному рабочему пространству');
     }
     return { workingSpace, workingSpaceRole };
   }
@@ -117,7 +138,7 @@ class WorkingSpaceService {
         private: false,
       },
       attributes: {
-        exclude: ['updatedAt', 'private'],
+        exclude: ['updatedAt', 'private', 'inviteLink'],
       },
       include: {
         model: User,
@@ -148,6 +169,19 @@ class WorkingSpaceService {
       limit,
     });
     return workingSpaces;
+  }
+
+  async inviteUserToWS(userId: number, link: string) {
+    const workingSpace = await WorkingSpace.findOne({ where: { inviteLink: link } });
+    if (!workingSpace) {
+      throw ApiError.BadRequest('Некорректная ссылка');
+    }
+    const workingSpaceRole = await WorkingSpaceRole.findOne({ where: { workingSpaceId: workingSpace.id, userId } });
+    if (workingSpaceRole) {
+      throw ApiError.BadRequest('Вы уже являетесь участником данного рабочего пространства');
+    }
+    await WorkingSpaceRole.create({ workingSpaceId: workingSpace.id, userId, roleId: 3 });
+    return { message: `Теперь Вы участник рабочего пространства - ${workingSpace.name}` };
   }
 }
 

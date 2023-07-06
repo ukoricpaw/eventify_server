@@ -7,6 +7,7 @@ interface WorkingSpaceAttributes {
   description?: string;
   private: boolean;
   userId: number;
+  inviteLink: string;
 }
 
 interface WorkingSpaceInstance
@@ -22,5 +23,6 @@ const WorkingSpace = sequelize.define<WorkingSpaceInstance>('working_space', {
   description: { type: DataTypes.STRING, allowNull: true },
   private: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
   userId: { type: DataTypes.INTEGER, allowNull: false },
+  inviteLink: { type: DataTypes.STRING, allowNull: false, unique: true },
 });
 export default WorkingSpace;

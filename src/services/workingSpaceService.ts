@@ -6,6 +6,7 @@ import Role from '../models/Role.js';
 import User from '../models/User.js';
 import { v4 } from 'uuid';
 import { Op } from 'sequelize';
+import imageService from './imageService.js';
 
 export const userAttributes = {
   exclude: ['password', 'isActivated', 'role', 'createdAt', 'updatedAt', 'activationLink'],
@@ -59,6 +60,14 @@ class WorkingSpaceService {
     const workingSpace = await WorkingSpace.findOne({ where: { id: workingSpaceId } });
     if (!workingSpace) {
       throw ApiError.BadRequest('Ошибка запроса');
+    }
+    const allDesks = await Desk.findAll({ where: { workingSpaceId } });
+    if (allDesks) {
+      allDesks.forEach(desk => {
+        if (desk.background) {
+          imageService.deleteFile(desk.background);
+        }
+      });
     }
     await workingSpace.destroy();
     return { message: 'Рабочее пространство было удалено' };

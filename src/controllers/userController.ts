@@ -16,6 +16,7 @@ class UserController {
       const { email, password, role } = req.body;
       const tokenData = await userService.registration(email, password, role);
       res.cookie('refreshToken', tokenData.refreshToken, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true });
+      res.cookie('accessToken', tokenData.accessToken, { maxAge: 60 * 15 * 1000, httpOnly: true });
       res.json(tokenData);
     } catch (err) {
       next(err);
@@ -64,6 +65,7 @@ class UserController {
       }
       const tokenData = await userService.login(email, password);
       res.cookie('refreshToken', tokenData.refreshToken, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true });
+      res.cookie('accessToken', tokenData.accessToken, { maxAge: 60 * 15 * 1000, httpOnly: true });
       res.json(tokenData);
     } catch (err) {
       console.log(err);
@@ -79,6 +81,7 @@ class UserController {
       }
       const tokenData = await tokenService.refresh(refreshToken);
       res.cookie('refreshToken', tokenData.refreshToken, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true });
+      res.cookie('accessToken', tokenData.accessToken, { maxAge: 60 * 15 * 1000, httpOnly: true });
       res.json(tokenData);
     } catch (err) {
       next(err);
@@ -93,6 +96,7 @@ class UserController {
       }
       const message = await tokenService.deleteToken(refreshToken);
       res.clearCookie('refreshToken');
+      res.clearCookie('accessToken');
       res.json(message);
     } catch (err) {
       next(err);

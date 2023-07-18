@@ -7,6 +7,7 @@ import UserDto from '../dtos/UserDto.js';
 export interface UserPayload {
   id: number;
   email: string;
+  avatar?: string | null;
   role: 'ADMIN' | 'USER';
 }
 
@@ -51,7 +52,12 @@ class TokenService {
     if (!user) {
       throw ApiError.NotAuthorized('Ошибка запроса');
     }
-    const tokenData = await this.generateToken({ id: user.id, email: user.email, role: user.role });
+    const tokenData = await this.generateToken({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      avatar: user.avatar,
+    });
     const userDto = new UserDto(user);
     await this.insertRefreshToken(user.id, tokenData.refreshToken);
     return { ...tokenData, user: { ...userDto } };

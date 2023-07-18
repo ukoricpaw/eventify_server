@@ -11,7 +11,12 @@ import fileUpload from 'express-fileupload';
 const PORT = process.env.PORT || 5000;
 
 const app: Application = express();
-app.use(cors());
+app.use(
+  cors({
+    credentials: true,
+    origin: process.env.CLIENT_URL,
+  }),
+);
 app.use(fileUpload({}));
 app.use(cookieParser());
 app.use(express.json());

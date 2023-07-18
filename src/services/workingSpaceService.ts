@@ -133,10 +133,21 @@ class WorkingSpaceService {
 
   async getAllWorkingSpaces(userId: number) {
     const workingSpaces = await WorkingSpace.findAndCountAll({
-      where: { userId },
       attributes: {
-        exclude: ['updatedAt'],
+        exclude: ['updatedAt', 'description', 'private', 'inviteLink', 'createdAt'],
       },
+      include: [
+        {
+          model: WorkingSpaceRole,
+          as: 'working_space_roles',
+          where: {
+            userId,
+          },
+          attributes: {
+            exclude: ['workingSpaceId', 'userId', 'createdAt', 'updatedAt', 'id'],
+          },
+        },
+      ],
       order: [['id', 'ASC']],
     });
     return workingSpaces;
@@ -200,7 +211,7 @@ class WorkingSpaceService {
   }
 
   async changePermission(wsId: number, ownerId: number, userId: number, roleId: number) {
-    const checkRoleRegEx = /[1-2]/g;
+    const checkRoleRegEx = /[2-3]/g;
     if (!roleId.toString().match(checkRoleRegEx)) {
       throw ApiError.BadRequest('Такой роли не существует');
     }
@@ -248,6 +259,7 @@ class WorkingSpaceService {
           attributes: userAttributes,
         },
       ],
+      order: [['roleId', 'ASC']],
       limit,
       offset,
       attributes: {

@@ -61,7 +61,7 @@ class DeskService {
     let backgroundUrl: undefined | string;
     if (background) {
       backgroundUrl = v4() + '.jpg';
-      imageService.uploadFile(backgroundUrl, background.data);
+      await imageService.uploadFile(backgroundUrl, background.data);
     }
     const newDesk = await Desk.create({ workingSpaceId: wsId, name, description, background: backgroundUrl });
     this.addStoryItem(userId, 2, newDesk.id, newDesk.name, null);

@@ -11,7 +11,7 @@ const checkAuthMiddleware = (req: ReqWithUserPayload, res: Response, next: NextF
     if (req.method === 'OPTIONS') {
       return next();
     }
-    const token = req.headers.authorization?.split(' ')[1]; //Bearer token;
+    const token = req.cookies.accessToken; //Bearer token;
     if (!token) {
       return res.status(401).json({ message: 'Пользователь не авторизован' });
     }

@@ -14,7 +14,7 @@ interface TokenInstance extends Model<TokenAttributes, Optional<TokenAttributes,
 
 const Token = sequelize.define<TokenInstance>('token', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-  refreshToken: { type: DataTypes.STRING, allowNull: false },
+  refreshToken: { type: DataTypes.TEXT, allowNull: false },
   userId: { type: DataTypes.INTEGER, allowNull: false },
 });
 

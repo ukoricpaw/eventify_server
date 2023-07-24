@@ -8,6 +8,7 @@ interface DeskListItemAttributes {
   deadline?: Date | null;
   order: number;
   deskListId: number;
+  deskId: number;
 }
 
 interface DeskListItemInstance
@@ -19,6 +20,7 @@ interface DeskListItemInstance
 
 const DeskListItem = sequelize.define<DeskListItemInstance>('desk_list_item', {
   id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true, allowNull: false },
+  deskId: { type: DataTypes.INTEGER, allowNull: false },
   name: { type: DataTypes.STRING, allowNull: false },
   description: { type: DataTypes.STRING, allowNull: true },
   order: { type: DataTypes.INTEGER, allowNull: false },

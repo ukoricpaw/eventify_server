@@ -27,7 +27,7 @@ class ListItemService {
     if (listItems) {
       order = ++listItems;
     }
-    const newListItem = await DeskListItem.create({ name, deskListId: listId, order });
+    const newListItem = await DeskListItem.create({ name, deskListId: listId, order, deskId });
     deskService.addStoryItem(userId, 10, deskId, newListItem.name, null);
     return newListItem;
   }

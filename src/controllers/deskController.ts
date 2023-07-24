@@ -134,6 +134,23 @@ class DeskController {
       next(err);
     }
   }
+
+  async getItems(req: ReqWithUserPayload, res: Response, next: NextFunction) {
+    try {
+      const { wsid, id } = req.params;
+      if (!wsid || !id) {
+        throw ApiError.BadRequest('Ошибка запроса');
+      }
+      let userId = null;
+      if (req.user) {
+        userId = req.user.id;
+      }
+      const items = await deskService.getItems(Number(wsid), Number(id), userId);
+      res.json(items);
+    } catch (err) {
+      next(err);
+    }
+  }
 }
 
 export default new DeskController();

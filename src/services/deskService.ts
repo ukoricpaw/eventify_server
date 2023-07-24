@@ -89,7 +89,7 @@ class DeskService {
                   model: DeskListItem,
                   required: false,
                   attributes: {
-                    exclude: ['createdAt', 'updatedAt', 'id', 'deskListId'],
+                    exclude: ['createdAt', 'updatedAt', 'deskListId', 'deskId', 'name', 'description', 'deadline'],
                   },
                 },
               ],
@@ -118,7 +118,7 @@ class DeskService {
                   order: [['order', 'ASC']],
                   as: 'desk_list_items',
                   attributes: {
-                    exclude: ['createdAt', 'updatedAt', 'deskListId'],
+                    exclude: ['createdAt', 'updatedAt', 'deskListId', 'deskId', 'name', 'description', 'deadline'],
                   },
                   required: false,
                 },
@@ -226,6 +226,17 @@ class DeskService {
       ],
     });
     return story;
+  }
+
+  async getItems(wsId: number, deskId: number, userId: number | null) {
+    await this.checkWSAndRole(wsId, userId, true);
+    const items = await DeskListItem.findAll({
+      where: { deskId },
+      attributes: {
+        exclude: ['createdAt', 'deskListId', 'order'],
+      },
+    });
+    return items;
   }
 }
 

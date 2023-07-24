@@ -13,6 +13,7 @@ deskRouter.delete('/:wsid/:id', checkAuthMiddleware, deskController.deleteDesk);
 deskRouter.get('/:wsid/:id', checkUserMiddleware, deskController.getDesk);
 deskRouter.get('/story/:wsid/:id', checkUserMiddleware, deskController.getStory);
 deskRouter.post('/act/add', checkRoleMiddeware('ADMIN'), deskController.addDeskAct);
+deskRouter.get('/:wsid/:id/items', checkUserMiddleware, deskController.getItems);
 deskRouter.delete('/act/delete/:id', checkRoleMiddeware('ADMIN'), deskController.deleteDeskAct);
 
 export default deskRouter;

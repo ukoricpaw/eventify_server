@@ -40,6 +40,15 @@ Desk.hasMany(DeskList, {
   foreignKey: 'deskId',
 });
 
+Desk.hasMany(DeskListItem, {
+  sourceKey: 'id',
+  foreignKey: 'deskId',
+});
+
+DeskListItem.belongsTo(Desk, {
+  foreignKey: 'deskId',
+});
+
 DeskList.belongsTo(Desk, {
   foreignKey: 'deskId',
 });

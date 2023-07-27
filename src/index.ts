@@ -7,6 +7,8 @@ import models from './models/models.js';
 import router from './routers/index.js';
 import errorHandlerMiddleware from './middlewares/errorHandlerMiddleware.js';
 import fileUpload from 'express-fileupload';
+import http from 'node:http';
+import createWebSocketConnection from './ws/webSocketConnection.js';
 
 const PORT = process.env.PORT || 5000;
 
@@ -23,12 +25,15 @@ app.use(express.json());
 app.use('/api', router);
 app.use(errorHandlerMiddleware);
 
+const server = http.createServer(app);
+
 const start = async () => {
   try {
     console.log(models);
     await sequelize.authenticate();
     await sequelize.sync();
-    app.listen(PORT, () => {
+    createWebSocketConnection(server);
+    server.listen(PORT, () => {
       console.log(`server is working on ${PORT}`);
     });
   } catch (err) {

@@ -12,6 +12,10 @@ import DeskStory from '../models/DeskStory.js';
 import User from '../models/User.js';
 import { userAttributes } from './workingSpaceService.js';
 
+export const deskListAttributes = {
+  exclude: ['createdAt', 'updatedAt', 'deskListId', 'deskId', 'name', 'description', 'deadline'],
+};
+
 class DeskService {
   async addStoryItem(userId: number, deskActId: number, deskId: number, firstItem: string, secondItem: string | null) {
     const storyList = await DeskStory.count({ where: { deskId } });
@@ -50,6 +54,7 @@ class DeskService {
         throw ApiError.NoAccess('Нет доступа');
       }
     }
+    return workingSpaceRole;
   }
 
   async addNewDesk(wsId: number, userId: number, name: string, description?: string, background?: UploadedFile) {
@@ -88,9 +93,7 @@ class DeskService {
                 {
                   model: DeskListItem,
                   required: false,
-                  attributes: {
-                    exclude: ['createdAt', 'updatedAt', 'deskListId', 'deskId', 'name', 'description', 'deadline'],
-                  },
+                  attributes: deskListAttributes,
                 },
               ],
             },
@@ -117,9 +120,7 @@ class DeskService {
                   model: DeskListItem,
                   order: [['order', 'ASC']],
                   as: 'desk_list_items',
-                  attributes: {
-                    exclude: ['createdAt', 'updatedAt', 'deskListId', 'deskId', 'name', 'description', 'deadline'],
-                  },
+                  attributes: deskListAttributes,
                   required: false,
                 },
               ],

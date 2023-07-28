@@ -19,53 +19,58 @@ export default function createWebSocketConnection(server: ServerType) {
     }
 
     io.on('connection', async socket => {
-      const cookie = socket.handshake.headers.cookie;
-      if (!cookie) {
-        socket.disconnect();
-        return;
-      }
-      const token = cookie.split('; accessToken=')[1];
-      if (!token) {
-        socket.disconnect();
-        return;
-      }
-      const verified = tokenService.validateAccessToken(token);
-      if (!verified) {
-        socket.disconnect();
-        return;
-      }
-      const { wspaceId, deskId } = socket.handshake.query;
-      if (!wspaceId || !deskId) {
-        socket.disconnect();
-        return;
-      }
-      await listService
-        .checkWSRoleAndDesk(Number(wspaceId), Number(verified.id), Number(deskId), true)
-        .catch(() => socket.disconnect());
+      try {
+        const cookie = socket.handshake.headers.cookie;
+        if (!cookie) {
+          throw new Error();
+        }
+        const token = cookie.split('; accessToken=')[1];
+        if (!token) {
+          throw new Error();
+        }
+        const verified = tokenService.validateAccessToken(token);
+        if (!verified) {
+          throw new Error();
+        }
+        const { wspaceId, deskId } = socket.handshake.query;
+        if (!wspaceId || !deskId) {
+          throw new Error();
+        }
+        const wsRole = await listService
+          .checkWSRoleAndDesk(Number(wspaceId), Number(verified.id), Number(deskId), true)
+          .catch(() => {
+            throw new Error();
+          });
 
-      socket.join(deskId);
+        socket.join(deskId);
 
-      console.log(verified.email);
+        console.log(verified.email);
 
-      const publicWSHandlers = publicHandlers(io as Server, socket, {
-        wsId: Number(wspaceId),
-        deskId: Number(deskId),
-        userId: verified.id,
-      });
-
-      privateHandlers(
-        socket,
-        {
+        const publicWSHandlers = publicHandlers(io as Server, socket, {
           wsId: Number(wspaceId),
           deskId: Number(deskId),
           userId: verified.id,
-        },
-        publicWSHandlers,
-      );
+        });
 
-      socket.on('disconnect', () => {
-        console.log('disconnect');
-      });
+        if (wsRole && wsRole?.roleId <= 2) {
+          privateHandlers(
+            socket,
+            {
+              wsId: Number(wspaceId),
+              deskId: Number(deskId),
+              userId: verified.id,
+            },
+            publicWSHandlers,
+          );
+        }
+
+        socket.on('disconnect', () => {
+          console.log('disconnect');
+        });
+      } catch (err) {
+        socket.emit('errorMessage', 'Ошибка соединения');
+        socket.disconnect();
+      }
     });
   } catch (err) {
     console.log(err);

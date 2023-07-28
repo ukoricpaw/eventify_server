@@ -7,24 +7,24 @@ import { Op } from 'sequelize';
 class ListService {
   async checkWSRoleAndDesk(wsId: number, userId: number, deskId: number, checkAccess: null | true) {
     try {
-      await deskService.checkWSAndRole(wsId, userId, checkAccess);
+      const wsRole = await deskService.checkWSAndRole(wsId, userId, checkAccess);
       const desk = await Desk.findOne({ where: { workingSpaceId: wsId, id: deskId } });
       if (!desk) {
         throw ApiError.BadRequest('Ошибка запроса');
       }
+      return wsRole;
     } catch (err) {
       throw new Error('Ошибка запроса');
     }
   }
   async addNewList(wsId: number, deskId: number, userId: number, name: string) {
-    await this.checkWSRoleAndDesk(wsId, userId, deskId, null);
     let lists = await DeskList.count({ where: { deskId } });
     if (lists > 19) {
       throw ApiError.BadRequest('Превышен лимит списков');
     }
-    let order = 1;
+    let order = 0;
     if (lists) {
-      order = ++lists;
+      order = ++lists - 1;
     }
     const newList = await DeskList.create({ name, deskId, description: null, order });
     deskService.addStoryItem(userId, 4, deskId, newList.name, null);
@@ -66,7 +66,6 @@ class ListService {
   }
 
   async deleteList(wsId: number, deskId: number, userId: number, listId: number) {
-    await this.checkWSRoleAndDesk(wsId, userId, deskId, null);
     const list = await DeskList.findOne({ where: { deskId, id: listId } });
     if (!list) {
       throw ApiError.BadRequest('Список не найден');
@@ -91,7 +90,6 @@ class ListService {
   }
 
   async changeOrder(wsId: number, deskId: number, userId: number, listId: number, order: number) {
-    await this.checkWSRoleAndDesk(wsId, userId, deskId, null);
     const list = await DeskList.findOne({ where: { deskId, id: listId } });
     if (!list) {
       throw ApiError.BadRequest('Список не найден');
@@ -100,7 +98,7 @@ class ListService {
       throw ApiError.BadRequest('Ошибка запроса');
     }
     const listCount = await DeskList.count({ where: { deskId } });
-    if (order < 1 || order > listCount) {
+    if (order < 0 || order > listCount - 1) {
       throw ApiError.BadRequest('Ошибка запроса');
     }
     if (order < list.order) {
@@ -112,9 +110,9 @@ class ListService {
           },
         },
       });
-      lists.forEach(list => {
+      lists.forEach(async list => {
         list.order++;
-        list.save();
+        await list.save();
       });
     } else if (order > list.order) {
       const lists = await DeskList.findAll({
@@ -125,9 +123,9 @@ class ListService {
           },
         },
       });
-      lists.forEach(list => {
+      lists.forEach(async list => {
         list.order--;
-        list.save();
+        await list.save();
       });
     }
     list.order = order;

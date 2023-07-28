@@ -1,6 +1,6 @@
 import { Op } from 'sequelize';
 import ApiError from '../error/ApiError.js';
-import DeskListItem from '../models/DeskItem.js';
+import DeskListItem, { DeskListItemInstance } from '../models/DeskItem.js';
 import DeskList from '../models/DeskList.js';
 import deskService from './deskService.js';
 
@@ -18,14 +18,13 @@ class ListItemService {
   }
 
   async addNewListItem(wsId: number, deskId: number, listId: number, userId: number, name: string) {
-    await this.checkWsRoleAndList(wsId, userId, deskId, listId, null);
     let listItems = await DeskListItem.count({ where: { deskListId: listId } });
     if (listItems > 19) {
       throw ApiError.BadRequest('Превышен лимит элементов списка');
     }
-    let order = 1;
+    let order = 0;
     if (listItems) {
-      order = ++listItems;
+      order = ++listItems - 1;
     }
     const newListItem = await DeskListItem.create({ name, deskListId: listId, order, deskId });
     deskService.addStoryItem(userId, 10, deskId, newListItem.name, null);
@@ -88,17 +87,12 @@ class ListItemService {
     return { message: 'Элемент списка был удалён' };
   }
 
-  async changeOrder(wsId: number, deskId: number, listId: number, id: number, userId: number, order: number) {
-    await this.checkWsRoleAndList(wsId, userId, deskId, listId, null);
-    const item = await DeskListItem.findOne({ where: { deskListId: listId, id } });
-    if (!item) {
-      throw ApiError.BadRequest('Список не найден');
-    }
+  async changeOrderInSameColumn(item: DeskListItemInstance, order: number, listId: number) {
     if (item.order === order) {
-      throw ApiError.BadRequest('Ошибка запроса');
+      throw ApiError.BadRequest('Порядок совпадает');
     }
     const itemCount = await DeskListItem.count({ where: { deskListId: listId } });
-    if (order < 1 || order > itemCount) {
+    if (order < 0 || order > itemCount - 1) {
       throw ApiError.BadRequest('Ошибка запроса');
     }
     if (order < item.order) {
@@ -110,10 +104,12 @@ class ListItemService {
           },
         },
       });
-      items.forEach(item => {
-        item.order++;
-        item.save();
-      });
+      await Promise.all(
+        items.map(async item => {
+          item.order++;
+          await item.save();
+        }),
+      );
     } else if (order > item.order) {
       const items = await DeskListItem.findAll({
         where: {
@@ -123,13 +119,67 @@ class ListItemService {
           },
         },
       });
-      items.forEach(item => {
-        item.order--;
-        item.save();
-      });
+      await Promise.all(
+        items.map(async item => {
+          item.order--;
+          await item.save();
+        }),
+      );
     }
     item.order = order;
     await item.save();
+  }
+
+  async changeOrderToAnotherColumn(item: DeskListItemInstance, order: number, listId: number, secondListId: number) {
+    const anotherDeskListItems = await DeskListItem.findAll({
+      where: {
+        deskId: item.deskId,
+        deskListId: secondListId,
+        order: {
+          [Op.gte]: order,
+        },
+      },
+    });
+    const ownDeskListItems = await DeskListItem.findAll({
+      where: {
+        deskId: item.deskId,
+        deskListId: listId,
+        order: {
+          [Op.gte]: item.order,
+        },
+      },
+    });
+    if (anotherDeskListItems) {
+      await Promise.all(
+        anotherDeskListItems.map(async item => {
+          item.order++;
+          await item.save();
+        }),
+      );
+    }
+    if (ownDeskListItems) {
+      await Promise.all(
+        ownDeskListItems.map(async item => {
+          item.order--;
+          await item.save();
+        }),
+      );
+    }
+    item.order = order;
+    item.deskListId = secondListId;
+    await item.save();
+  }
+
+  async changeOrder(deskId: number, listId: number, id: number, order: number, secondListId: number | null) {
+    const item = await DeskListItem.findOne({ where: { deskId, deskListId: listId, id } });
+    if (!item) {
+      throw ApiError.BadRequest('Список не найден');
+    }
+    if (secondListId) {
+      await this.changeOrderToAnotherColumn(item, order, listId, secondListId);
+    } else {
+      await this.changeOrderInSameColumn(item, order, listId);
+    }
     return { message: 'Порядок изменён' };
   }
 }

@@ -69,18 +69,15 @@ class ListItemController {
   async changeOrder(req: ReqWithUserPayload, res: Response, next: NextFunction) {
     try {
       const { wsid, deskid, listid, id } = req.params;
-      const order = req.body.order;
-      if (!wsid || !deskid || !req.user || !listid || !id || !order) {
+      const { order, listId } = req.body;
+      let list = null;
+      if (!wsid || !deskid || !req.user || !listid || !id || (!order && order !== 0)) {
         throw ApiError.BadRequest('Ошибка запроса');
       }
-      const message = await listItemService.changeOrder(
-        Number(wsid),
-        Number(deskid),
-        Number(listid),
-        Number(id),
-        req.user.id,
-        order,
-      );
+      if (listId) {
+        list = listId;
+      }
+      const message = await listItemService.changeOrder(Number(deskid), Number(listid), Number(id), order, list);
       res.json(message);
     } catch (err) {
       next(err);

@@ -10,7 +10,9 @@ interface DeskListAttributes {
   isarchived?: boolean | string;
 }
 
-interface DeskListInstance extends Model<DeskListAttributes, Optional<DeskListAttributes, 'id'>>, DeskListAttributes {
+export interface DeskListInstance
+  extends Model<DeskListAttributes, Optional<DeskListAttributes, 'id'>>,
+    DeskListAttributes {
   createdAt?: Date;
   updatedAt?: Date;
 }

@@ -11,7 +11,7 @@ interface DeskListItemAttributes {
   deskId: number;
 }
 
-interface DeskListItemInstance
+export interface DeskListItemInstance
   extends Model<DeskListItemAttributes, Optional<DeskListItemAttributes, 'id'>>,
     DeskListItemAttributes {
   createdAt?: Date;

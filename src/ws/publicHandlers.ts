@@ -46,6 +46,7 @@ export default function publicHandlers(io: Server, socket: Socket, userSessionPa
     try {
       const list = await DeskList.findOne({
         where: { id: listId },
+        order: [[{ model: DeskListItem, as: 'desk_list_items' }, 'order', 'ASC']],
         include: [
           {
             model: DeskListItem,
@@ -60,6 +61,7 @@ export default function publicHandlers(io: Server, socket: Socket, userSessionPa
       if (secondListId) {
         secondList = await DeskList.findOne({
           where: { id: secondListId },
+          order: [[{ model: DeskListItem, as: 'desk_list_items' }, 'order', 'ASC']],
           include: [
             {
               model: DeskListItem,

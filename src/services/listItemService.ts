@@ -145,11 +145,11 @@ class ListItemService {
         deskId: item.deskId,
         deskListId: listId,
         order: {
-          [Op.gte]: item.order,
+          [Op.gt]: item.order,
         },
       },
     });
-    if (anotherDeskListItems) {
+    if (anotherDeskListItems.length) {
       await Promise.all(
         anotherDeskListItems.map(async item => {
           item.order++;
@@ -157,7 +157,7 @@ class ListItemService {
         }),
       );
     }
-    if (ownDeskListItems) {
+    if (ownDeskListItems.length) {
       await Promise.all(
         ownDeskListItems.map(async item => {
           item.order--;

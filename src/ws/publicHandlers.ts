@@ -14,19 +14,14 @@ export type GettingDeskType = {
 export default function publicHandlers(io: Server, socket: Socket, userSessionParams: GettingDeskType) {
   async function getDesk(socketRender?: boolean) {
     try {
-      const desk = await deskService.getFullDesk(
-        userSessionParams.wsId,
-        userSessionParams.deskId,
-        userSessionParams.userId,
-        null,
-      );
+      const desk = await deskService.searchDesk(userSessionParams.deskId, userSessionParams.wsId, true, null);
       if (socketRender) {
         io.in(String(userSessionParams.deskId)).emit('desk', { desk });
       } else {
         socket.to(String(userSessionParams.deskId)).emit('desk', { desk });
       }
     } catch (err) {
-      emitErrorMessage();
+      emitErrorMessage(err as Error);
     }
   }
 
@@ -38,7 +33,7 @@ export default function publicHandlers(io: Server, socket: Socket, userSessionPa
         socket.to(String(userSessionParams.deskId)).emit('desk:newcol', column);
       }
     } catch (err) {
-      emitErrorMessage();
+      emitErrorMessage(err as Error);
     }
   }
 
@@ -80,7 +75,7 @@ export default function publicHandlers(io: Server, socket: Socket, userSessionPa
         socket.to(String(userSessionParams.deskId)).emit('item:getNewOrder', { list, secondList });
       }
     } catch (err) {
-      emitErrorMessage();
+      emitErrorMessage(err as Error);
     }
   }
 
@@ -92,13 +87,46 @@ export default function publicHandlers(io: Server, socket: Socket, userSessionPa
         socket.to(String(userSessionParams.deskId)).emit('list:getItem', { listId, item });
       }
     } catch (err) {
-      emitErrorMessage();
+      emitErrorMessage(err as Error);
     }
   }
 
-  function emitErrorMessage() {
-    socket.emit('errorMessage', 'Ошибка запроса');
+  function provideNewColumnName(listId: number, name: string) {
+    try {
+      socket.to(String(userSessionParams.deskId)).emit('list:newName', { listId, name });
+    } catch (err) {
+      emitErrorMessage(err as Error);
+    }
   }
 
-  return { getDesk, getNewColumn, emitErrorMessage, getNewColumnItem, changeColumn };
+  function provideNewColumnDescription(listId: number, description: string | null) {
+    try {
+      socket.to(String(userSessionParams.deskId)).emit('list:newDescription', { listId, description });
+    } catch (err) {
+      emitErrorMessage(err as Error);
+    }
+  }
+
+  function getArchivedListItems(listId: number, type: 'toArchive' | 'fromArchive') {
+    try {
+      io.in(String(userSessionParams.deskId)).emit('list:archiveList', { listId, type });
+    } catch (err) {
+      emitErrorMessage(err as Error);
+    }
+  }
+
+  function emitErrorMessage(err: Error) {
+    socket.emit('errorMessage', err.message ?? 'Произошла ошибка');
+  }
+
+  return {
+    getDesk,
+    getNewColumn,
+    emitErrorMessage,
+    getNewColumnItem,
+    changeColumn,
+    provideNewColumnName,
+    provideNewColumnDescription,
+    getArchivedListItems,
+  };
 }

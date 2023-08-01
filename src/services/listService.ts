@@ -18,7 +18,7 @@ class ListService {
     }
   }
   async addNewList(wsId: number, deskId: number, userId: number, name: string) {
-    let lists = await DeskList.count({ where: { deskId } });
+    let lists = await DeskList.count({ where: { deskId, isarchived: false } });
     if (lists > 19) {
       throw ApiError.BadRequest('Превышен лимит списков');
     }
@@ -31,38 +31,73 @@ class ListService {
     return newList;
   }
 
-  async updateList(
-    wsId: number,
-    deskId: number,
-    userId: number,
-    listId: number,
-    description: string | undefined,
-    isarchived: string | undefined,
-    name: string | undefined,
-  ) {
-    await this.checkWSRoleAndDesk(wsId, userId, deskId, null);
+  async changeListName(name: string, listId: number, deskId: number, userId: number) {
+    const list = await DeskList.findOne({ where: { deskId, id: listId } });
+    if (!list) {
+      throw ApiError.BadRequest('Список не найден');
+    }
+    name && deskService.addStoryItem(userId, 8, deskId, list.name, name);
+    list.name = name || list.name;
+    await list.save();
+    return list.name;
+  }
+
+  async changeListDescription(description: string, listId: number, deskId: number, userId: number) {
     const list = await DeskList.findOne({ where: { deskId, id: listId } });
     if (!list) {
       throw ApiError.BadRequest('Список не найден');
     }
     list.description = description || list.description;
     description && deskService.addStoryItem(userId, 9, deskId, list.name, null);
+    await list.save();
+    return list.description;
+  }
+
+  async changeArchiveStatus(isarchived: string, listId: number, deskId: number, userId: number) {
+    const list = await DeskList.findOne({ where: { deskId, id: listId } });
+    if (!list) {
+      throw ApiError.BadRequest('Список не найден');
+    }
     if (isarchived === 'false') {
+      const lists = await DeskList.count({ where: { deskId, isarchived: false } });
+      if (lists > 19) {
+        throw ApiError.BadRequest('Превышено количество колонн');
+      }
       if (!list.isarchived) {
         throw ApiError.BadRequest('Список не находится в архиве');
       }
+      list.order = lists;
       deskService.addStoryItem(userId, 15, deskId, list.name, null);
     } else if (isarchived === 'true') {
+      const listCount = await DeskList.count({ where: { deskId, isarchived: true } });
+      if (listCount > 19) {
+        throw ApiError.BadRequest('Архив переполнен');
+      }
       if (list.isarchived) {
         throw ApiError.BadRequest('Список уже находится в архиве');
       }
       deskService.addStoryItem(userId, 7, deskId, list.name, null);
+      const lists = await DeskList.findAll({
+        where: {
+          deskId,
+          isarchived: false,
+          order: {
+            [Op.gt]: list.order,
+          },
+        },
+      });
+      if (lists) {
+        await Promise.all(
+          lists.map(async list => {
+            list.order = list.order - 1;
+            await list.save();
+          }),
+        );
+      }
     }
     list.isarchived = isarchived || list.isarchived;
-    name && deskService.addStoryItem(userId, 8, deskId, list.name, name);
-    list.name = name || list.name;
     await list.save();
-    return list;
+    return list.isarchived;
   }
 
   async deleteList(wsId: number, deskId: number, userId: number, listId: number) {
@@ -110,10 +145,12 @@ class ListService {
           },
         },
       });
-      lists.forEach(async list => {
-        list.order++;
-        await list.save();
-      });
+      await Promise.all(
+        lists.map(async list => {
+          list.order++;
+          await list.save();
+        }),
+      );
     } else if (order > list.order) {
       const lists = await DeskList.findAll({
         where: {
@@ -123,10 +160,12 @@ class ListService {
           },
         },
       });
-      lists.forEach(async list => {
-        list.order--;
-        await list.save();
-      });
+      await Promise.all(
+        lists.map(async list => {
+          list.order--;
+          await list.save();
+        }),
+      );
     }
     list.order = order;
     await list.save();

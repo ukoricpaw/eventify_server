@@ -44,7 +44,7 @@ export default function createWebSocketConnection(server: ServerType) {
 
         socket.join(deskId);
 
-        console.log(verified.email);
+        console.log(verified.email, socket.id);
 
         const publicWSHandlers = publicHandlers(io as Server, socket, {
           wsId: Number(wspaceId),

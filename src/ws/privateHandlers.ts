@@ -1,19 +1,12 @@
 import { Socket } from 'socket.io';
 import listService from '../services/listService.js';
 import { GettingDeskType } from './publicHandlers.js';
-import { DeskListInstance } from '../models/DeskList.js';
 import listItemService from '../services/listItemService.js';
-import { DeskListItemInstance } from '../models/DeskItem.js';
+import { PublicHandlersType } from './types.js';
 export default function privateHandlers(
   socket: Socket,
   userSessionParams: GettingDeskType,
-  publicHandlers: {
-    getDesk: (socketRender?: boolean) => Promise<void>;
-    getNewColumn: (column: DeskListInstance, socketRender?: boolean) => void;
-    getNewColumnItem: (listId: number, item: DeskListItemInstance, socketRender?: boolean) => void;
-    emitErrorMessage: () => void;
-    changeColumn: (listId: number, secondListId: number | null, socketRender?: boolean) => void;
-  },
+  publicHandlers: PublicHandlersType,
 ) {
   async function addColumnList(name: string) {
     try {
@@ -25,16 +18,16 @@ export default function privateHandlers(
       );
       publicHandlers.getNewColumn(column, true);
     } catch (err) {
-      publicHandlers.emitErrorMessage();
+      publicHandlers.emitErrorMessage(err as Error);
     }
   }
 
   async function deleteColumnList(listId: number) {
     try {
       await listService.deleteList(userSessionParams.wsId, userSessionParams.deskId, userSessionParams.userId, listId);
-      await publicHandlers.getDesk(true);
+      await publicHandlers.getDesk(false);
     } catch (err) {
-      publicHandlers.emitErrorMessage();
+      publicHandlers.emitErrorMessage(err as Error);
     }
   }
 
@@ -49,7 +42,7 @@ export default function privateHandlers(
       );
       await publicHandlers.getDesk(false);
     } catch (err) {
-      publicHandlers.emitErrorMessage();
+      publicHandlers.emitErrorMessage(err as Error);
     }
   }
 
@@ -58,7 +51,7 @@ export default function privateHandlers(
       await listItemService.changeOrder(userSessionParams.deskId, listId, itemId, order, secondList);
       publicHandlers.changeColumn(listId, secondList);
     } catch (err) {
-      publicHandlers.emitErrorMessage();
+      publicHandlers.emitErrorMessage(err as Error);
     }
   }
 
@@ -73,13 +66,53 @@ export default function privateHandlers(
       );
       publicHandlers.getNewColumnItem(listId, listItem, true);
     } catch (err) {
-      publicHandlers.emitErrorMessage();
+      publicHandlers.emitErrorMessage(err as Error);
     }
   }
 
+  async function changeColumnName(listId: number, name: string) {
+    try {
+      const listName = await listService.changeListName(
+        name,
+        listId,
+        userSessionParams.deskId,
+        userSessionParams.userId,
+      );
+      publicHandlers.provideNewColumnName(listId, listName);
+    } catch (err) {
+      publicHandlers.emitErrorMessage(err as Error);
+    }
+  }
+
+  async function changeColumnDescription(listId: number, description: string) {
+    try {
+      const listDescription = await listService.changeListDescription(
+        description,
+        listId,
+        userSessionParams.deskId,
+        userSessionParams.userId,
+      );
+      publicHandlers.provideNewColumnDescription(listId, listDescription);
+    } catch (err) {
+      publicHandlers.emitErrorMessage(err as Error);
+    }
+  }
+
+  async function changeColumnArchiveStatus(listId: number, isarchived: string) {
+    try {
+      await listService.changeArchiveStatus(isarchived, listId, userSessionParams.deskId, userSessionParams.userId);
+      const type = isarchived === 'true' ? 'toArchive' : 'fromArchive';
+      publicHandlers.getArchivedListItems(listId, type);
+    } catch (err) {
+      publicHandlers.emitErrorMessage(err as Error);
+    }
+  }
   socket.on('list:add', addColumnList);
   socket.on('list:delete', deleteColumnList);
   socket.on('list:reorder', reorderColumns);
   socket.on('list:newItem', addNewItemToColumn);
   socket.on('item:reorder', reorderItemsInColumns);
+  socket.on('list:name', changeColumnName);
+  socket.on('list:description', changeColumnDescription);
+  socket.on('list:archive', changeColumnArchiveStatus);
 }

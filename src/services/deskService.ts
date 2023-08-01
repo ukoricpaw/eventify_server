@@ -234,7 +234,7 @@ class DeskService {
     const items = await DeskListItem.findAll({
       where: { deskId },
       attributes: {
-        exclude: ['createdAt', 'deskListId', 'order'],
+        exclude: ['createdAt', 'order'],
       },
     });
     return items;

@@ -6,7 +6,7 @@ import checkRoleMiddeware from '../middlewares/checkRoleMiddleware.js';
 import listRouter from './listRouter.js';
 
 const deskRouter = Router();
-deskRouter.use('/list', listRouter);
+// deskRouter.use('/list', listRouter);
 deskRouter.post('/:id', checkAuthMiddleware, deskController.addNewDesk);
 deskRouter.put('/:wsid/:id', checkAuthMiddleware, deskController.updateDesk);
 deskRouter.delete('/:wsid/:id', checkAuthMiddleware, deskController.deleteDesk);

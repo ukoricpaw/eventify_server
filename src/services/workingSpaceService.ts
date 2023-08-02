@@ -49,7 +49,7 @@ class WorkingSpaceService {
       throw ApiError.BadRequest('Ошибка запроса');
     }
     workingSpace.name = name || workingSpace.name;
-    workingSpace.description = description || workingSpace.description;
+    workingSpace.description = description ?? workingSpace.description;
     workingSpace.private = isPrivate || workingSpace.private;
     await workingSpace.save();
     return workingSpace;

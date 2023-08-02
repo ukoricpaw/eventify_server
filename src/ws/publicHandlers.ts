@@ -119,6 +119,22 @@ export default function publicHandlers(io: Server, socket: Socket, userSessionPa
     socket.emit('errorMessage', err.message ?? 'Произошла ошибка');
   }
 
+  function provideNewDeskName(name: string) {
+    try {
+      socket.to(String(userSessionParams.deskId)).emit('desk:newName', name);
+    } catch (err) {
+      emitErrorMessage(err as Error);
+    }
+  }
+
+  function provideNewDeskDescription(description: string | null) {
+    try {
+      socket.to(String(userSessionParams.deskId)).emit('desk:newDescription', description);
+    } catch (err) {
+      emitErrorMessage(err as Error);
+    }
+  }
+
   return {
     getDesk,
     getNewColumn,
@@ -128,5 +144,7 @@ export default function publicHandlers(io: Server, socket: Socket, userSessionPa
     provideNewColumnName,
     provideNewColumnDescription,
     getArchivedListItems,
+    provideNewDeskName,
+    provideNewDeskDescription,
   };
 }

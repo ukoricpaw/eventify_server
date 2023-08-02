@@ -21,7 +21,7 @@ class WorkingSpaceController {
     try {
       const id = req.params.id;
       const { name, description, isPrivate } = req.body;
-      if (!req.user || !id || (!name && !description && !isPrivate)) {
+      if (!req.user || !id || (!name && !description && description !== '' && !isPrivate)) {
         throw ApiError.BadRequest('Ошибка запроса');
       }
       const changedWorkingSpace = await workingSpaceService.updateWorkingSpace(

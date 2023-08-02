@@ -137,6 +137,50 @@ class DeskService {
     return desk;
   }
 
+  async changeDeskName(deskId: number, wsId: number, userId: number, name: string) {
+    const desk = await this.searchDesk(deskId, wsId, null, null);
+    desk.name = name;
+    await desk.save();
+    this.addStoryItem(userId, 3, desk.id, desk.name, null);
+    return desk.name;
+  }
+
+  async changeDeskDescription(deskId: number, wsId: number, userId: number, description?: string) {
+    const desk = await this.searchDesk(deskId, wsId, null, null);
+    desk.description = description ?? undefined;
+    await desk.save();
+    this.addStoryItem(userId, 3, desk.id, desk.name, null);
+    return desk.description;
+  }
+
+  async changeImage(
+    deskId: number,
+    wsId: number,
+    userId: number,
+    background?: UploadedFile | null,
+    delete_img?: boolean,
+  ) {
+    const desk = await this.searchDesk(deskId, wsId, null, null);
+    if (delete_img) {
+      background = null;
+      if (!desk.background) {
+        throw ApiError.BadRequest('Невозможно удалить изображение');
+      }
+      imageService.deleteFile(desk.background);
+      desk.background = null;
+    }
+    if (background) {
+      const uuid = v4() + '.jpg';
+      if (desk.background) {
+        imageService.deleteFile(desk.background);
+      }
+      await imageService.uploadFile(uuid, background.data);
+      desk.background = uuid;
+    }
+    await desk.save();
+    this.addStoryItem(userId, 3, desk.id, desk.name, null);
+  }
+
   async updateDesk(
     wsId: number,
     deskId: number,

@@ -10,4 +10,6 @@ export interface PublicHandlersType {
   provideNewColumnName: (listId: number, name: string) => void;
   provideNewColumnDescription: (listId: number, description: string | null) => void;
   getArchivedListItems: (listId: number, type: 'toArchive' | 'fromArchive') => void;
+  provideNewDeskName: (name: string) => void;
+  provideNewDeskDescription: (description: string | null) => void;
 }

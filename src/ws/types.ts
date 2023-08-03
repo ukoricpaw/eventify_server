@@ -12,4 +12,6 @@ export interface PublicHandlersType {
   getArchivedListItems: (listId: number, type: 'toArchive' | 'fromArchive') => void;
   provideNewDeskName: (name: string) => void;
   provideNewDeskDescription: (description: string | null) => void;
+  provideNewItemName: (item: number, name: string) => void;
+  provideNewItemDescription: (item: number, description: string) => void;
 }

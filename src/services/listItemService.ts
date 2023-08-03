@@ -1,20 +1,15 @@
 import { Op } from 'sequelize';
 import ApiError from '../error/ApiError.js';
 import DeskListItem, { DeskListItemInstance } from '../models/DeskItem.js';
-import DeskList from '../models/DeskList.js';
 import deskService from './deskService.js';
 
 class ListItemService {
-  async checkWsRoleAndList(wsId: number, userId: number, deskId: number, listId: number, checkAccess: null | true) {
-    try {
-      await deskService.checkWSAndRole(wsId, userId, checkAccess);
-      const list = await DeskList.findOne({ where: { deskId, id: listId } });
-      if (!list) {
-        throw ApiError.BadRequest('Ошибка запроса');
-      }
-    } catch (err) {
-      throw new Error('Ошибка запроса');
+  async checkListItem(deskId: number, listId: number, id: number) {
+    const item = await DeskListItem.findOne({ where: { deskId, deskListId: listId, id } });
+    if (!item) {
+      throw ApiError.BadRequest('Элемент списка не найден');
     }
+    return item;
   }
 
   async addNewListItem(wsId: number, deskId: number, listId: number, userId: number, name: string) {
@@ -31,43 +26,32 @@ class ListItemService {
     return newListItem;
   }
 
-  async updateListItem(
-    wsId: number,
-    deskId: number,
-    listId: number,
-    id: number,
-    userId: number,
-    name: string | undefined,
-    description: string | undefined,
-    deadline: Date | undefined,
-  ) {
-    await this.checkWsRoleAndList(wsId, userId, deskId, listId, null);
-    const item = await DeskListItem.findOne({ where: { deskListId: listId, id } });
-    if (!item) {
-      throw ApiError.BadRequest('Элемент списка не найден');
-    }
-    if (name) {
-      deskService.addStoryItem(userId, 12, deskId, item.name, name);
-      item.name = name;
-    }
-    if (description) {
-      item.description = description;
-      deskService.addStoryItem(userId, 13, deskId, item.name, null);
-    }
-    if (deadline) {
-      item.deadline = deadline;
-      deskService.addStoryItem(userId, 11, deskId, item.name, deadline.toISOString());
-    }
+  async changeItemName(deskId: number, listId: number, id: number, userId: number, name: string) {
+    const item = await this.checkListItem(deskId, listId, id);
+    deskService.addStoryItem(userId, 12, deskId, item.name, name);
+    item.name = name;
+    await item.save();
+    return item.name;
+  }
+
+  async changeItemDescription(deskId: number, listId: number, id: number, userId: number, description: string) {
+    const item = await this.checkListItem(deskId, listId, id);
+    deskService.addStoryItem(userId, 13, deskId, item.name, null);
+    item.description = description;
+    await item.save();
+    return item.description;
+  }
+
+  async changeItemDeadLine(deskId: number, listId: number, id: number, userId: number, deadline: Date) {
+    const item = await this.checkListItem(deskId, listId, id);
+    deskService.addStoryItem(userId, 11, deskId, item.name, deadline.toISOString());
+    item.deadline = deadline;
     await item.save();
     return item;
   }
 
-  async deleteListItem(wsId: number, deskId: number, listId: number, id: number, userId: number) {
-    await this.checkWsRoleAndList(wsId, userId, deskId, listId, null);
-    const item = await DeskListItem.findOne({ where: { deskListId: listId, id } });
-    if (!item) {
-      throw ApiError.BadRequest('Элемент списка не найден');
-    }
+  async deleteListItem(deskId: number, listId: number, id: number, userId: number) {
+    const item = await this.checkListItem(deskId, listId, id);
     const items = await DeskListItem.findAll({
       where: {
         deskListId: listId,
@@ -171,10 +155,7 @@ class ListItemService {
   }
 
   async changeOrder(deskId: number, listId: number, id: number, order: number, secondListId: number | null) {
-    const item = await DeskListItem.findOne({ where: { deskId, deskListId: listId, id } });
-    if (!item) {
-      throw ApiError.BadRequest('Список не найден');
-    }
+    const item = await this.checkListItem(deskId, listId, id);
     if (secondListId) {
       await this.changeOrderToAnotherColumn(item, order, listId, secondListId);
     } else {

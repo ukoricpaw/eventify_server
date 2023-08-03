@@ -2,8 +2,8 @@ import { Server } from 'socket.io';
 import type { Server as ServerType } from 'node:http';
 import tokenService from '../services/tokenService.js';
 import listService from '../services/listService.js';
-import publicHandlers from './publicHandlers.js';
-import privateHandlers from './privateHandlers.js';
+import publicHandlers from './publicHandlers/publicHandlers.js';
+import privateHandlers from './privateHandlers/privateHandlers.js';
 
 let io: null | Server = null;
 

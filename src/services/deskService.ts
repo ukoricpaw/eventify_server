@@ -181,42 +181,6 @@ class DeskService {
     this.addStoryItem(userId, 3, desk.id, desk.name, null);
   }
 
-  async updateDesk(
-    wsId: number,
-    deskId: number,
-    userId: number,
-    name?: string,
-    description?: string,
-    background?: UploadedFile | null,
-    delete_img?: boolean,
-  ) {
-    await this.checkWSAndRole(wsId, userId, null);
-    const desk = await this.searchDesk(deskId, wsId, null, null);
-    desk.name = name || desk.name;
-    desk.description = description || desk.description;
-    if (delete_img) {
-      background = null;
-      if (!desk.background) {
-        throw ApiError.BadRequest('Невозможно удалить изображение');
-      }
-      imageService.deleteFile(desk.background);
-      desk.background = null;
-    }
-
-    if (background) {
-      const uuid = v4() + '.jpg';
-      if (desk.background) {
-        imageService.deleteFile(desk.background);
-      }
-      await imageService.uploadFile(uuid, background.data);
-      desk.background = uuid;
-    }
-
-    await desk.save();
-    this.addStoryItem(userId, 3, desk.id, desk.name, null);
-    return desk;
-  }
-
   async deleteDesk(wsId: number, deskId: number, userId: number) {
     await this.checkWSAndRole(wsId, userId, null);
     const desk = await this.searchDesk(deskId, wsId, null, null);
@@ -278,7 +242,7 @@ class DeskService {
     const items = await DeskListItem.findAll({
       where: { deskId },
       attributes: {
-        exclude: ['createdAt', 'order'],
+        exclude: ['order'],
       },
     });
     return items;

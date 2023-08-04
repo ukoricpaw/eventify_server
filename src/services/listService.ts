@@ -47,7 +47,7 @@ class ListService {
     if (!list) {
       throw ApiError.BadRequest('Список не найден');
     }
-    list.description = description || list.description;
+    list.description = description ?? list.description;
     description && deskService.addStoryItem(userId, 9, deskId, list.name, null);
     await list.save();
     return list.description;

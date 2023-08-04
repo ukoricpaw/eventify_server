@@ -31,11 +31,9 @@ class DeskController {
   async updateDesk(req: ReqWithUserPayload, res: Response, next: NextFunction) {
     try {
       const { wsid, id } = req.params;
-      if (!wsid || !id || !req.user) {
-        throw ApiError.BadRequest('Некорректные параметры');
-      }
-      const { name, description, delete_img } = req.body;
-      if (!name && !description && !delete_img && !req.files) {
+
+      const { delete_img } = req.body;
+      if (!delete_img || !req.files || !req.user) {
         throw ApiError.BadRequest('Ошибка запроса');
       }
       let img;
@@ -43,15 +41,7 @@ class DeskController {
         const background = req.files.background as UploadedFile;
         img = background;
       }
-      const updatedDesk = await deskService.updateDesk(
-        Number(wsid),
-        Number(id),
-        req.user.id,
-        name,
-        description,
-        img,
-        delete_img,
-      );
+      const updatedDesk = await deskService.changeImage(Number(id), Number(wsid), req.user.id, img, delete_img);
       res.json(updatedDesk);
     } catch (err) {
       next(err);

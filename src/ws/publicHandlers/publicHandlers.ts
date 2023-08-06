@@ -38,5 +38,6 @@ export default function publicHandlers(io: Server, socket: Socket, userSessionPa
     provideNewDeskDescription: deskHandlers.provideNewDeskDescription,
     provideNewItemName: itemHandlers.provideColumnItemName,
     provideNewItemDescription: itemHandlers.provideNewItemDescription,
+    provideNewItemDeadline: itemHandlers.provideNewItemDeadline,
   };
 }

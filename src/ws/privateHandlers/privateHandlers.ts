@@ -23,6 +23,7 @@ export default function privateHandlers(
   socket.on('item:reorder', colItemHandlers.reorderItemsInColumns);
   socket.on('item:name', colItemHandlers.changeItemName);
   socket.on('item:description', colItemHandlers.changeItemDescription);
+  socket.on('item:deadline', colItemHandlers.changeItemDeadline);
   socket.on('desk:name', fullDeskHandlers.changeDeskName);
   socket.on('desk:description', fullDeskHandlers.changeDeskDescription);
 }

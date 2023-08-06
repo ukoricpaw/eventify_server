@@ -1,19 +1,12 @@
-import { Op } from 'sequelize';
 import ApiError from '../error/ApiError.js';
-import DeskListItem, { DeskListItemInstance } from '../models/DeskItem.js';
-import deskService from './deskService.js';
+import { DeskListItemInstance } from '../models/DeskItem.js';
+import deskActsService from './deskActsService.js';
+import listItemRepository from '../repositories/listItemRepository.js';
+import { InfoItemType } from '../types/listItemTypes.js';
 
 class ListItemService {
-  async checkListItem(deskId: number, listId: number, id: number) {
-    const item = await DeskListItem.findOne({ where: { deskId, deskListId: listId, id } });
-    if (!item) {
-      throw ApiError.BadRequest('Элемент списка не найден');
-    }
-    return item;
-  }
-
-  async addNewListItem(wsId: number, deskId: number, listId: number, userId: number, name: string) {
-    let listItems = await DeskListItem.count({ where: { deskListId: listId } });
+  async addNewListItem(deskId: number, listId: number, userId: number, name: string) {
+    let listItems = await listItemRepository.getCountByListId(listId);
     if (listItems > 19) {
       throw ApiError.BadRequest('Превышен лимит элементов списка');
     }
@@ -21,52 +14,36 @@ class ListItemService {
     if (listItems) {
       order = ++listItems - 1;
     }
-    const newListItem = await DeskListItem.create({ name, deskListId: listId, order, deskId });
-    deskService.addStoryItem(userId, 10, deskId, newListItem.name, null);
+    const newListItem = await listItemRepository.createNewListItem({ name, deskId, deskListId: listId, order });
+    deskActsService.addStoryItem(userId, 10, deskId, newListItem.name, null);
     return newListItem;
   }
 
-  async changeItemName(deskId: number, listId: number, id: number, userId: number, name: string) {
-    const item = await this.checkListItem(deskId, listId, id);
-    deskService.addStoryItem(userId, 12, deskId, item.name, name);
-    item.name = name;
-    await item.save();
-    return item.name;
-  }
+  async changeItemInfo(infoType: InfoItemType, deskId: number, listId: number, id: number, userId: number) {
+    const item = await listItemRepository.findOneListItem(deskId, listId, id);
+    deskActsService.addStoryItem(
+      userId,
+      infoType.type === 'name' ? 12 : infoType.type === 'description' ? 13 : 11,
+      deskId,
+      item.name,
+      infoType.type === 'deadline' ? infoType.content.toISOString() : infoType.content,
+    );
+    item[infoType.type] = infoType.content as any;
 
-  async changeItemDescription(deskId: number, listId: number, id: number, userId: number, description: string) {
-    const item = await this.checkListItem(deskId, listId, id);
-    deskService.addStoryItem(userId, 13, deskId, item.name, null);
-    item.description = description;
     await item.save();
-    return item.description;
-  }
-
-  async changeItemDeadLine(deskId: number, listId: number, id: number, userId: number, deadline: Date) {
-    const item = await this.checkListItem(deskId, listId, id);
-    deskService.addStoryItem(userId, 11, deskId, item.name, deadline.toISOString());
-    item.deadline = deadline;
-    await item.save();
-    return item;
+    return item[infoType.type];
   }
 
   async deleteListItem(deskId: number, listId: number, id: number, userId: number) {
-    const item = await this.checkListItem(deskId, listId, id);
-    const items = await DeskListItem.findAll({
-      where: {
-        deskListId: listId,
-        order: {
-          [Op.gt]: item.order,
-        },
-      },
-    });
+    const item = await listItemRepository.findOneListItem(deskId, listId, id);
+    const items = await listItemRepository.findAllItems(deskId, listId, item.order);
     if (items) {
       items.forEach(item => {
         item.order--;
         item.save();
       });
     }
-    deskService.addStoryItem(userId, 14, deskId, item.name, null);
+    deskActsService.addStoryItem(userId, 14, deskId, item.name, null);
     await item.destroy();
     return { message: 'Элемент списка был удалён' };
   }
@@ -75,19 +52,12 @@ class ListItemService {
     if (item.order === order) {
       throw ApiError.BadRequest('Порядок совпадает');
     }
-    const itemCount = await DeskListItem.count({ where: { deskListId: listId } });
+    const itemCount = await listItemRepository.getCountByListId(listId);
     if (order < 0 || order > itemCount - 1) {
       throw ApiError.BadRequest('Ошибка запроса');
     }
     if (order < item.order) {
-      const items = await DeskListItem.findAll({
-        where: {
-          deskListId: listId,
-          order: {
-            [Op.between]: [order, item.order],
-          },
-        },
-      });
+      const items = await listItemRepository.findAllItems(item.deskId, listId, order, item.order);
       await Promise.all(
         items.map(async item => {
           item.order++;
@@ -95,14 +65,7 @@ class ListItemService {
         }),
       );
     } else if (order > item.order) {
-      const items = await DeskListItem.findAll({
-        where: {
-          deskListId: listId,
-          order: {
-            [Op.between]: [item.order, order],
-          },
-        },
-      });
+      const items = await listItemRepository.findAllItems(item.deskId, listId, item.order, order);
       await Promise.all(
         items.map(async item => {
           item.order--;
@@ -115,24 +78,8 @@ class ListItemService {
   }
 
   async changeOrderToAnotherColumn(item: DeskListItemInstance, order: number, listId: number, secondListId: number) {
-    const anotherDeskListItems = await DeskListItem.findAll({
-      where: {
-        deskId: item.deskId,
-        deskListId: secondListId,
-        order: {
-          [Op.gte]: order,
-        },
-      },
-    });
-    const ownDeskListItems = await DeskListItem.findAll({
-      where: {
-        deskId: item.deskId,
-        deskListId: listId,
-        order: {
-          [Op.gt]: item.order,
-        },
-      },
-    });
+    const anotherDeskListItems = await listItemRepository.findAllItems(item.deskId, secondListId, order);
+    const ownDeskListItems = await listItemRepository.findAllItems(item.deskId, listId, item.order);
     if (anotherDeskListItems.length) {
       await Promise.all(
         anotherDeskListItems.map(async item => {
@@ -155,7 +102,7 @@ class ListItemService {
   }
 
   async changeOrder(deskId: number, listId: number, id: number, order: number, secondListId: number | null) {
-    const item = await this.checkListItem(deskId, listId, id);
+    const item = await listItemRepository.findOneListItem(deskId, listId, id);
     if (secondListId) {
       await this.changeOrderToAnotherColumn(item, order, listId, secondListId);
     } else {

@@ -5,8 +5,14 @@ import deskService from '../../services/deskService.js';
 export default function privateDeskHandlers(userSessionParams: GettingDeskType, publicHandlers: PublicHandlersType) {
   async function changeDeskName(deskId: number, name: string) {
     try {
-      const deskName = await deskService.changeDeskName(deskId, userSessionParams.wsId, userSessionParams.userId, name);
-      publicHandlers.provideNewDeskName(deskName);
+      const deskName = await deskService.changeDeskInfo(
+        'name',
+        deskId,
+        userSessionParams.wsId,
+        userSessionParams.userId,
+        name,
+      );
+      publicHandlers.provideNewDeskName(deskName as string);
     } catch (err) {
       publicHandlers.emitErrorMessage(err as Error);
     }
@@ -14,7 +20,8 @@ export default function privateDeskHandlers(userSessionParams: GettingDeskType, 
 
   async function changeDeskDescription(deskId: number, description: string) {
     try {
-      const deskDescription = await deskService.changeDeskDescription(
+      const deskDescription = await deskService.changeDeskInfo(
+        'description',
         deskId,
         userSessionParams.wsId,
         userSessionParams.userId,

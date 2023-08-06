@@ -8,7 +8,7 @@ interface WorkingSpaceRoleAttributes {
   roleId: number;
 }
 
-interface WorkingSpaceRoleInstance
+export interface WorkingSpaceRoleInstance
   extends Model<WorkingSpaceRoleAttributes, Optional<WorkingSpaceRoleAttributes, 'id'>>,
     WorkingSpaceRoleAttributes {
   createdAt?: Date;

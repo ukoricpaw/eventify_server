@@ -1,37 +1,34 @@
-import WorkingSpace from '../models/WorkingSpace.js';
-import WorkingSpaceRole from '../models/WorkingSpaceRole.js';
 import ApiError from '../error/ApiError.js';
-import Desk from '../models/Desk.js';
-import Role from '../models/Role.js';
-import User from '../models/User.js';
 import { v4 } from 'uuid';
-import { Op } from 'sequelize';
 import imageService from './imageService.js';
-
-export const userAttributes = {
-  exclude: ['password', 'isActivated', 'role', 'createdAt', 'updatedAt', 'activationLink'],
-};
+import workingSpaceRepository from '../repositories/workingSpaceRepository.js';
+import getRoleId from '../utils/getRoleId.js';
+import roleRepository from '../repositories/roleRepository.js';
+import deskRepository from '../repositories/deskRepository.js';
+import roleService from './roleService.js';
 
 class WorkingSpaceService {
   async addNewWorkingSpace(name: string, description: string | undefined, userId: number) {
-    const workingSpaces = await WorkingSpace.count({ where: { userId } });
-    if (workingSpaces > 4) {
+    const workingSpacesCount = await workingSpaceRepository.getCountByUserId(userId);
+    if (workingSpacesCount > 4) {
       throw ApiError.BadRequest('Превышен лимит рабочих пространств');
     }
     const inviteLink = v4();
-    const newWorkingSpace = await WorkingSpace.create({ name, description, userId, private: true, inviteLink });
-    const role = await WorkingSpaceRole.create({ workingSpaceId: newWorkingSpace.id, userId, roleId: 1 });
+    const newWorkingSpace = await workingSpaceRepository.createNewWorkingSpace(
+      name,
+      description,
+      userId,
+      true,
+      inviteLink,
+    );
+    const roleId = getRoleId('ADMIN');
+    const role = await roleRepository.createRole(newWorkingSpace.id, userId, roleId);
     return { newWorkingSpace, role };
   }
 
-  async getWorkingSpaceRole(workingSpaceId: number, userId: number) {
-    const workingSpaceRole = await WorkingSpaceRole.findOne({
-      where: {
-        workingSpaceId,
-        userId,
-      },
-    });
-    if (!workingSpaceRole || workingSpaceRole.roleId !== 1) {
+  async checkWorkingSpaceRole(workingSpaceId: number, userId: number) {
+    const role = await roleRepository.findByUserIdAndWorkingSpaceId({ workingSpaceId, userId, includeRoleInfo: false });
+    if (!role || role.roleId !== 1) {
       throw ApiError.NoAccess('Нет доступа');
     }
   }
@@ -43,8 +40,8 @@ class WorkingSpaceService {
     description: string | undefined,
     isPrivate: boolean | undefined,
   ) {
-    await this.getWorkingSpaceRole(workingSpaceId, userId);
-    const workingSpace = await WorkingSpace.findOne({ where: { id: workingSpaceId } });
+    await this.checkWorkingSpaceRole(workingSpaceId, userId);
+    const workingSpace = await workingSpaceRepository.findByWorkingSpaceId(workingSpaceId);
     if (!workingSpace) {
       throw ApiError.BadRequest('Ошибка запроса');
     }
@@ -56,12 +53,12 @@ class WorkingSpaceService {
   }
 
   async deleteWorkingSpace(workingSpaceId: number, userId: number) {
-    await this.getWorkingSpaceRole(workingSpaceId, userId);
-    const workingSpace = await WorkingSpace.findOne({ where: { id: workingSpaceId } });
+    await this.checkWorkingSpaceRole(workingSpaceId, userId);
+    const workingSpace = await workingSpaceRepository.findByWorkingSpaceId(workingSpaceId);
     if (!workingSpace) {
       throw ApiError.BadRequest('Ошибка запроса');
     }
-    const allDesks = await Desk.findAll({ where: { workingSpaceId } });
+    const allDesks = await deskRepository.findAllByWorkingSpaceId(workingSpaceId);
     if (allDesks) {
       allDesks.forEach(desk => {
         if (desk.background) {
@@ -76,51 +73,17 @@ class WorkingSpaceService {
   async getSinglePublicWS(userId: number | null, workingSpaceId: number) {
     let workingSpaceRole = null;
     if (userId) {
-      workingSpaceRole = await WorkingSpaceRole.findOne({
-        where: {
-          workingSpaceId,
-          userId,
-        },
-        include: {
-          model: Role,
-          as: 'role',
-        },
-        attributes: {
-          exclude: ['createdAt', 'updatedAt', 'id'],
-        },
+      workingSpaceRole = await roleRepository.findByUserIdAndWorkingSpaceId({
+        workingSpaceId,
+        userId,
+        includeRoleInfo: true,
       });
     }
     let workingSpace = null;
-    if (workingSpaceRole && (workingSpaceRole.roleId === 1 || workingSpaceRole.roleId === 2)) {
-      workingSpace = await WorkingSpace.findOne({
-        where: { id: workingSpaceId },
-        include: [
-          { model: Desk, as: 'desks', required: false },
-          {
-            model: User,
-            as: 'user',
-            attributes: userAttributes,
-          },
-        ],
-        attributes: {
-          exclude: ['createdAt', 'updatedAt', 'userId'],
-        },
-      });
+    if (roleService.isRoleValid(workingSpaceRole)) {
+      workingSpace = await workingSpaceRepository.findSingleWorkingSpace(workingSpaceId, true);
     } else {
-      workingSpace = await WorkingSpace.findOne({
-        where: { id: workingSpaceId },
-        include: [
-          { model: Desk, as: 'desks', required: false },
-          {
-            model: User,
-            as: 'user',
-            attributes: userAttributes,
-          },
-        ],
-        attributes: {
-          exclude: ['createdAt', 'updatedAt', 'userId', 'inviteLink'],
-        },
-      });
+      workingSpace = await workingSpaceRepository.findSingleWorkingSpace(workingSpaceId, true);
     }
     if (!workingSpace) {
       throw ApiError.BadRequest('Ошибка запроса');
@@ -132,81 +95,45 @@ class WorkingSpaceService {
   }
 
   async getAllWorkingSpaces(userId: number) {
-    const workingSpaces = await WorkingSpace.findAndCountAll({
-      attributes: {
-        exclude: ['updatedAt', 'description', 'private', 'inviteLink', 'createdAt'],
-      },
-      include: [
-        {
-          model: WorkingSpaceRole,
-          as: 'working_space_roles',
-          where: {
-            userId,
-          },
-          attributes: {
-            exclude: ['workingSpaceId', 'userId', 'createdAt', 'updatedAt', 'id'],
-          },
-        },
-      ],
-      order: [['id', 'ASC']],
-    });
+    const workingSpaces = await workingSpaceRepository.getAllWorkingSpacesByUserId(userId);
     return workingSpaces;
   }
 
   async getAllPublicWorkingSpaces(offset: number, limit: number, search: string) {
-    const workingSpaces = await WorkingSpace.findAndCountAll({
-      where: {
-        private: false,
-        name: {
-          [Op.like]: `%${search}%`,
-        },
-      },
-      attributes: {
-        exclude: ['updatedAt', 'private', 'inviteLink'],
-      },
-      include: {
-        model: User,
-        as: 'user',
-        attributes: userAttributes,
-      },
+    const workingSpaces = await workingSpaceRepository.getAllWorkingSpacesBySearch({
       offset,
       limit,
+      search,
+      isPrivate: false,
     });
     return workingSpaces;
   }
 
   async getAllPrivateWorkingSpaces(offset: number, limit: number, search: string) {
-    const workingSpaces = await WorkingSpace.findAndCountAll({
-      where: {
-        private: true,
-        name: {
-          [Op.like]: `%${search}%`,
-        },
-      },
-      attributes: {
-        exclude: ['updatedAt'],
-      },
-      include: {
-        model: User,
-        as: 'user',
-        attributes: userAttributes,
-      },
+    const workingSpaces = await workingSpaceRepository.getAllWorkingSpacesBySearch({
       offset,
       limit,
+      search,
+      isPrivate: true,
     });
     return workingSpaces;
   }
 
   async inviteUserToWS(userId: number, link: string) {
-    const workingSpace = await WorkingSpace.findOne({ where: { inviteLink: link } });
+    const workingSpace = await workingSpaceRepository.findByLink(link);
     if (!workingSpace) {
       throw ApiError.BadRequest('Некорректная ссылка');
     }
-    const workingSpaceRole = await WorkingSpaceRole.findOne({ where: { workingSpaceId: workingSpace.id, userId } });
+    const workingSpaceRole = await roleRepository.findByUserIdAndWorkingSpaceId({
+      workingSpaceId: workingSpace.id,
+      userId,
+      includeRoleInfo: false,
+    });
     if (workingSpaceRole) {
       throw ApiError.BadRequest('Вы уже являетесь участником данного рабочего пространства');
     }
-    await WorkingSpaceRole.create({ workingSpaceId: workingSpace.id, userId, roleId: 3 });
+    const roleId = getRoleId('READER');
+    await roleRepository.createRole(workingSpace.id, userId, roleId);
     return { message: `Теперь Вы участник рабочего пространства - ${workingSpace.name}` };
   }
 
@@ -215,11 +142,19 @@ class WorkingSpaceService {
     if (!roleId.toString().match(checkRoleRegEx)) {
       throw ApiError.BadRequest('Такой роли не существует');
     }
-    const checkOwnerRole = await WorkingSpaceRole.findOne({ where: { workingSpaceId: wsId, userId: ownerId } });
+    const checkOwnerRole = await roleRepository.findByUserIdAndWorkingSpaceId({
+      workingSpaceId: wsId,
+      userId: ownerId,
+      includeRoleInfo: false,
+    });
     if (!checkOwnerRole || checkOwnerRole.roleId !== 1) {
       throw ApiError.NoAccess('Нет доступа');
     }
-    const userRole = await WorkingSpaceRole.findOne({ where: { workingSpaceId: wsId, userId } });
+    const userRole = await roleRepository.findByUserIdAndWorkingSpaceId({
+      workingSpaceId: wsId,
+      userId,
+      includeRoleInfo: false,
+    });
     if (!userRole) {
       throw ApiError.BadRequest('Пользователь не является участником рабочего пространства');
     }
@@ -233,39 +168,16 @@ class WorkingSpaceService {
     if (!userId) {
       userId = -1;
     }
-    const wsRole = await WorkingSpaceRole.findOne({ where: { workingSpaceId: wsId, userId } });
-    const ws = await WorkingSpace.findOne({ where: { id: wsId } });
+    const wsRole = await roleRepository.findByUserIdAndWorkingSpaceId({
+      workingSpaceId: wsId,
+      userId,
+      includeRoleInfo: false,
+    });
+    const ws = await workingSpaceRepository.findByWorkingSpaceId(wsId);
     if (!ws || (!wsRole && ws.private)) {
       throw ApiError.BadRequest('Нет доступа');
     }
-    const users = await WorkingSpaceRole.findAndCountAll({
-      where: {
-        workingSpaceId: wsId,
-      },
-      include: [
-        {
-          model: Role,
-          attributes: {
-            exclude: ['createdAt', 'updatedAt'],
-          },
-        },
-        {
-          model: User,
-          where: {
-            email: {
-              [Op.like]: `%${search}%`,
-            },
-          },
-          attributes: userAttributes,
-        },
-      ],
-      order: [['roleId', 'ASC']],
-      limit,
-      offset,
-      attributes: {
-        exclude: ['createdAt', 'updatedAt', 'id'],
-      },
-    });
+    const users = await workingSpaceRepository.getAllWorkingSpaceUsers(wsId, search, limit, offset);
     return users;
   }
 }

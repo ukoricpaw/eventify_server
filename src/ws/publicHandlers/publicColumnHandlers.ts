@@ -1,8 +1,6 @@
 import { DeskListInstance } from '../../models/DeskList.js';
-import DeskListItem from '../../models/DeskItem.js';
-import { deskListAttributes } from '../../services/deskService.js';
-import DeskList from '../../models/DeskList.js';
 import { PublicHandlersType } from './publicHandlers.js';
+import listRepository from '../../repositories/listRepository.js';
 
 export default function publicColumnHandlers({ socket, io, emitErrorMessage, userSessionParams }: PublicHandlersType) {
   function getNewColumn(column: DeskListInstance, socketRender?: boolean) {
@@ -19,34 +17,10 @@ export default function publicColumnHandlers({ socket, io, emitErrorMessage, use
 
   async function changeColumn(listId: number, secondListId: number | null, socketRender?: boolean) {
     try {
-      const list = await DeskList.findOne({
-        where: { id: listId },
-        order: [[{ model: DeskListItem, as: 'desk_list_items' }, 'order', 'ASC']],
-        include: [
-          {
-            model: DeskListItem,
-            order: [['order', 'ASC']],
-            as: 'desk_list_items',
-            attributes: deskListAttributes,
-            required: false,
-          },
-        ],
-      });
+      const list = await listRepository.findOneColumn(listId);
       let secondList = null;
       if (secondListId) {
-        secondList = await DeskList.findOne({
-          where: { id: secondListId },
-          order: [[{ model: DeskListItem, as: 'desk_list_items' }, 'order', 'ASC']],
-          include: [
-            {
-              model: DeskListItem,
-              order: [['order', 'ASC']],
-              as: 'desk_list_items',
-              attributes: deskListAttributes,
-              required: false,
-            },
-          ],
-        });
+        secondList = await listRepository.findOneColumn(secondListId);
       }
 
       if (socketRender) {

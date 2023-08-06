@@ -15,7 +15,6 @@ export default function privateItemHandlers(userSessionParams: GettingDeskType, 
   async function addNewItemToColumn(listId: number, name: string) {
     try {
       const listItem = await listItemService.addNewListItem(
-        userSessionParams.wsId,
         userSessionParams.deskId,
         listId,
         userSessionParams.userId,
@@ -29,14 +28,14 @@ export default function privateItemHandlers(userSessionParams: GettingDeskType, 
 
   async function changeItemName(listId: number, item: number, name: string) {
     try {
-      const itemName = await listItemService.changeItemName(
+      const itemName = await listItemService.changeItemInfo(
+        { type: 'name', content: name },
         userSessionParams.deskId,
         listId,
         item,
         userSessionParams.userId,
-        name,
       );
-      publicHandlers.provideNewItemName(item, itemName);
+      publicHandlers.provideNewItemName(item, itemName as string);
     } catch (err) {
       publicHandlers.emitErrorMessage(err as Error);
     }
@@ -44,18 +43,34 @@ export default function privateItemHandlers(userSessionParams: GettingDeskType, 
 
   async function changeItemDescription(listId: number, item: number, description: string) {
     try {
-      const itemDescription = await listItemService.changeItemDescription(
+      const itemDescription = await listItemService.changeItemInfo(
+        { type: 'description', content: description },
         userSessionParams.deskId,
         listId,
         item,
         userSessionParams.userId,
-        description,
       );
-      publicHandlers.provideNewItemDescription(item, itemDescription);
+      publicHandlers.provideNewItemDescription(item, itemDescription as string);
     } catch (err) {
       publicHandlers.emitErrorMessage(err as Error);
     }
   }
 
-  return { addNewItemToColumn, reorderItemsInColumns, changeItemName, changeItemDescription };
+  async function changeItemDeadline(listId: number, item: number, deadline: string) {
+    try {
+      const date = new Date(deadline);
+      const newDeadline = await listItemService.changeItemInfo(
+        { type: 'deadline', content: date },
+        userSessionParams.deskId,
+        listId,
+        item,
+        userSessionParams.userId,
+      );
+      publicHandlers.provideNewItemDeadline(item, newDeadline as Date);
+    } catch (err) {
+      publicHandlers.emitErrorMessage(err as Error);
+    }
+  }
+
+  return { addNewItemToColumn, reorderItemsInColumns, changeItemName, changeItemDescription, changeItemDeadline };
 }

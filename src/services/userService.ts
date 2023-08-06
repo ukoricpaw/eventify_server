@@ -7,7 +7,7 @@ import tokenService from './tokenService.js';
 import mailService from './mailService.js';
 import { UploadedFile } from 'express-fileupload';
 import imageService from './imageService.js';
-import { userAttributes } from './workingSpaceService.js';
+import workingSpaceRepository from '../repositories/workingSpaceRepository.js';
 
 class UserService {
   async registration(email: string, password: string, role: 'ADMIN' | 'USER') {
@@ -47,7 +47,7 @@ class UserService {
   }
 
   async updateUser(id: number, avatar: UploadedFile | null, delete_img: boolean | null) {
-    const user = await User.findOne({ where: { id }, attributes: userAttributes });
+    const user = await User.findOne({ where: { id }, attributes: workingSpaceRepository.userAttributes });
     if (!user) {
       throw ApiError.BadRequest('Данного пользователя не существует');
     }

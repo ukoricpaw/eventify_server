@@ -3,12 +3,13 @@ import ApiError from '../error/ApiError.js';
 import { ReqWithUserPayload } from '../middlewares/checkAuthMiddleware.js';
 import deskService from '../services/deskService.js';
 import { UploadedFile } from 'express-fileupload';
+import deskActsService from '../services/deskActsService.js';
 
 class DeskController {
   async addNewDesk(req: ReqWithUserPayload, res: Response, next: NextFunction) {
     try {
-      const id = req.params.id;
-      if (!id || !req.user) {
+      const deskId = req.params.id;
+      if (!deskId || !req.user) {
         throw ApiError.BadRequest('Ошибка запроса');
       }
       const { name, description } = req.body;
@@ -21,7 +22,7 @@ class DeskController {
         throw ApiError.BadRequest('Некорректные данные');
       }
 
-      const newDesk = await deskService.addNewDesk(Number(id), Number(req.user.id), name, description, img);
+      const newDesk = await deskService.addNewDesk(Number(deskId), Number(req.user.id), name, description, img);
       res.json(newDesk);
     } catch (err) {
       next(err);
@@ -31,9 +32,8 @@ class DeskController {
   async updateDesk(req: ReqWithUserPayload, res: Response, next: NextFunction) {
     try {
       const { wsid, id } = req.params;
-
       const { delete_img } = req.body;
-      if (!delete_img || !req.files || !req.user) {
+      if (!req.files || !req.user) {
         throw ApiError.BadRequest('Ошибка запроса');
       }
       let img;
@@ -41,8 +41,8 @@ class DeskController {
         const background = req.files.background as UploadedFile;
         img = background;
       }
-      const updatedDesk = await deskService.changeImage(Number(id), Number(wsid), req.user.id, img, delete_img);
-      res.json(updatedDesk);
+      await deskService.changeImage(Number(id), Number(wsid), req.user.id, img, delete_img);
+      res.json({ message: 'Изображение было изменено' });
     } catch (err) {
       next(err);
     }
@@ -88,7 +88,7 @@ class DeskController {
       if (!name) {
         throw ApiError.BadRequest('Ошибка запроса');
       }
-      const deskAct = await deskService.addDeskAct(name);
+      const deskAct = await deskActsService.addDeskAct(name);
       res.json(deskAct);
     } catch (err) {
       next(err);
@@ -101,7 +101,7 @@ class DeskController {
       if (!id) {
         throw ApiError.BadRequest('Ошибка запроса');
       }
-      const message = await deskService.deleteDeskAct(Number(id));
+      const message = await deskActsService.deleteDeskAct(Number(id));
       res.json(message);
     } catch (err) {
       next(err);
@@ -118,7 +118,7 @@ class DeskController {
       if (req.user) {
         userId = req.user.id;
       }
-      const story = await deskService.getStory(Number(wsid), Number(id), userId);
+      const story = await deskActsService.getStory(Number(wsid), Number(id), userId);
       res.json(story);
     } catch (err) {
       next(err);

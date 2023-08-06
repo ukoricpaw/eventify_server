@@ -38,5 +38,19 @@ export default function publicItemHandlers({ userSessionParams, io, socket, emit
     }
   }
 
-  return { getArchivedListItems, getNewColumnItem, provideColumnItemName, provideNewItemDescription };
+  function provideNewItemDeadline(item: number, deadline: Date) {
+    try {
+      io.in(String(userSessionParams.deskId)).emit('item:newDeadline', { itemId: item, deadline });
+    } catch (err) {
+      emitErrorMessage(err as Error);
+    }
+  }
+
+  return {
+    getArchivedListItems,
+    getNewColumnItem,
+    provideColumnItemName,
+    provideNewItemDescription,
+    provideNewItemDeadline,
+  };
 }

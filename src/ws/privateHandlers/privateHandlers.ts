@@ -1,29 +1,35 @@
 import { Socket } from 'socket.io';
-import { GettingDeskType } from '../publicHandlers/publicHandlers.js';
-import { PublicHandlersType } from '../types.js';
-import columnHandlers from './privateColumnHandlers.js';
-import deskHandlers from './privateDeskHandlers.js';
-import itemHandlers from './privateItemHandlers.js';
+import { HandlerProperties, GettingDeskType } from '../publicHandlers/publicHandlers.js';
+import { EmitEventsInterface } from '../publicHandlers/typesOfPublicHandlers.js';
+import { getTypesOfPrivateHandlers } from './typesOfPrivateHandlers.js';
 export default function privateHandlers(
   socket: Socket,
   userSessionParams: GettingDeskType,
-  publicHandlers: PublicHandlersType,
+  publicHandlers: EmitEventsInterface,
 ) {
-  const colHandlers = columnHandlers(userSessionParams, publicHandlers);
-  const fullDeskHandlers = deskHandlers(userSessionParams, publicHandlers);
-  const colItemHandlers = itemHandlers(userSessionParams, publicHandlers);
+  const handlerWithErrorChecking = privateOnHandlers(publicHandlers[HandlerProperties.ERROR_HANDLER_NUMBER]);
+  const typesOfPrivateHandlers = getTypesOfPrivateHandlers(
+    userSessionParams,
+    publicHandlers[HandlerProperties.EMIT_HANDLERS_NUMBER],
+  );
 
-  socket.on('list:add', colHandlers.addColumnList);
-  socket.on('list:delete', colHandlers.deleteColumnList);
-  socket.on('list:reorder', colHandlers.reorderColumns);
-  socket.on('list:name', colHandlers.changeColumnName);
-  socket.on('list:archive', colHandlers.changeColumnArchiveStatus);
-  socket.on('list:description', colHandlers.changeColumnDescription);
-  socket.on('list:newItem', colItemHandlers.addNewItemToColumn);
-  socket.on('item:reorder', colItemHandlers.reorderItemsInColumns);
-  socket.on('item:name', colItemHandlers.changeItemName);
-  socket.on('item:description', colItemHandlers.changeItemDescription);
-  socket.on('item:deadline', colItemHandlers.changeItemDeadline);
-  socket.on('desk:name', fullDeskHandlers.changeDeskName);
-  socket.on('desk:description', fullDeskHandlers.changeDeskDescription);
+  typesOfPrivateHandlers.forEach(privateHandlerWithEvent => {
+    socket.on(
+      privateHandlerWithEvent.event,
+      handlerWithErrorChecking(privateHandlerWithEvent.handler as () => Promise<void>),
+    );
+  });
+}
+
+function privateOnHandlers(emitError: EmitEventsInterface[typeof HandlerProperties.ERROR_HANDLER_NUMBER]) {
+  return <Args extends any[]>(handler: (...args: Args) => Promise<void>) => {
+    const handlerWithErrorChecking = async (...args: Args) => {
+      try {
+        await handler(...args);
+      } catch (err) {
+        emitError(err as Error);
+      }
+    };
+    return handlerWithErrorChecking;
+  };
 }

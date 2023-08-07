@@ -8,7 +8,7 @@ import router from './routers/index.js';
 import errorHandlerMiddleware from './middlewares/errorHandlerMiddleware.js';
 import fileUpload from 'express-fileupload';
 import http from 'node:http';
-import createWebSocketConnection from './ws/webSocketConnection.js';
+import createWebSocketConnection from './ws/connection/webSocketConnection.js';
 
 const PORT = process.env.PORT || 5000;
 

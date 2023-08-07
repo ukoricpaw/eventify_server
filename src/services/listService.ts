@@ -34,8 +34,8 @@ class ListService {
   async changeListInfo(type: 'description' | 'name', info: string, listId: number, deskId: number, userId: number) {
     const list = await listRepository.findOneByDeskIdAndListId(deskId, listId);
     list[type] = type === 'description' ? info ?? list[type] : info || list[type];
-    deskActsService.addStoryItem(userId, type === 'description' ? 9 : 8, deskId, list.name, info);
     await list.save();
+    deskActsService.addStoryItem(userId, type === 'description' ? 9 : 8, deskId, list.name, info);
     return list[type];
   }
 
@@ -94,6 +94,7 @@ class ListService {
 
   async changeOrder(deskId: number, listId: number, order: number) {
     const list = await listRepository.findOneByDeskIdAndListId(deskId, listId);
+    console.log(list.order, order);
     if (list.order === order) {
       throw ApiError.BadRequest('Ошибка запроса');
     }

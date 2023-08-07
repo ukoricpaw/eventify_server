@@ -21,6 +21,9 @@ class ListItemService {
 
   async changeItemInfo(infoType: InfoItemType, deskId: number, listId: number, id: number, userId: number) {
     const item = await listItemRepository.findOneListItem(deskId, listId, id);
+    item[infoType.type] = infoType.content as any;
+
+    await item.save();
     deskActsService.addStoryItem(
       userId,
       infoType.type === 'name' ? 12 : infoType.type === 'description' ? 13 : 11,
@@ -28,9 +31,6 @@ class ListItemService {
       item.name,
       infoType.type === 'deadline' ? infoType.content.toISOString() : infoType.content,
     );
-    item[infoType.type] = infoType.content as any;
-
-    await item.save();
     return item[infoType.type];
   }
 

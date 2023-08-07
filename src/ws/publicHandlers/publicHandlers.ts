@@ -1,13 +1,18 @@
 import { Socket, Server } from 'socket.io';
-import publicColumnHandlers from './publicColumnHandlers.js';
-import publicItemHandlers from './publicItemHandlers.js';
-import publicDeskHandlers from './publicDeskHandlers.js';
+import { emitEvent } from './emitEvents.js';
+import { typesOfEmitHandlers, EmitEventsInterface } from './typesOfPublicHandlers.js';
+import { emitErrorMessage } from './emitEvents.js';
 
 export type GettingDeskType = {
   wsId: number;
   deskId: number;
   userId: number;
 };
+
+export enum HandlerProperties {
+  ERROR_HANDLER_NUMBER = 0,
+  EMIT_HANDLERS_NUMBER = 1,
+}
 
 export type PublicHandlersType = {
   io: Server;
@@ -16,28 +21,20 @@ export type PublicHandlersType = {
   emitErrorMessage: (err: Error) => void;
 };
 
-export default function publicHandlers(io: Server, socket: Socket, userSessionParams: GettingDeskType) {
-  function emitErrorMessage(err: Error) {
-    socket.emit('errorMessage', err.message ?? 'Произошла ошибка');
-  }
+export default function publicHandlers(
+  io: Server,
+  socket: Socket,
+  userSessionParams: GettingDeskType,
+): EmitEventsInterface {
+  const eventWithDefaultConfiguration = emitEvent(socket, io, userSessionParams.deskId);
+  const emitHandlers = typesOfEmitHandlers.reduce(
+    (result: EmitEventsInterface[HandlerProperties.EMIT_HANDLERS_NUMBER], emitHandler) => {
+      result[emitHandler.keyOfEmitEvent] = eventWithDefaultConfiguration(emitHandler.valueOfEmitEvent);
+      return result;
+    },
+    {},
+  );
+  const emitErrorHandler = emitErrorMessage(socket);
 
-  const colHandlers = publicColumnHandlers({ socket, io, userSessionParams, emitErrorMessage });
-  const itemHandlers = publicItemHandlers({ socket, io, userSessionParams, emitErrorMessage });
-  const deskHandlers = publicDeskHandlers({ socket, io, userSessionParams, emitErrorMessage });
-
-  return {
-    getDesk: deskHandlers.getDesk,
-    getNewColumn: colHandlers.getNewColumn,
-    emitErrorMessage,
-    getNewColumnItem: itemHandlers.getNewColumnItem,
-    changeColumn: colHandlers.changeColumn,
-    provideNewColumnName: colHandlers.provideNewColumnName,
-    provideNewColumnDescription: colHandlers.provideNewColumnDescription,
-    getArchivedListItems: itemHandlers.getArchivedListItems,
-    provideNewDeskName: deskHandlers.provideNewDeskName,
-    provideNewDeskDescription: deskHandlers.provideNewDeskDescription,
-    provideNewItemName: itemHandlers.provideColumnItemName,
-    provideNewItemDescription: itemHandlers.provideNewItemDescription,
-    provideNewItemDeadline: itemHandlers.provideNewItemDeadline,
-  };
+  return [emitErrorHandler, emitHandlers];
 }

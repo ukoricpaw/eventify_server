@@ -31,12 +31,15 @@ class ListItemRepository {
     return newListItem;
   }
 
-  async findAllItems(deskId: number, listId: number, firstOrder: number, secondOrder?: number) {
+  async findAllItems(deskId: number, listId: number, firstOrder: number, equals: boolean, secondOrder?: number) {
     let order: any = {
       [Op.gt]: firstOrder,
     };
     if (secondOrder) {
       order = { [Op.between]: [firstOrder, secondOrder] };
+    }
+    if (equals) {
+      order = { [Op.gte]: firstOrder };
     }
     const allItems = await DeskListItem.findAll({
       where: {

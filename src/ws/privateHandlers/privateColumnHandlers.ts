@@ -15,13 +15,13 @@ export default function privateColumnHandlers(
   async function deleteColumnList(listId: number) {
     await listService.deleteList(userSessionParams.deskId, userSessionParams.userId, listId);
     const desk = await deskService.searchDesk(userSessionParams.deskId, userSessionParams.wsId, true, null);
-    publicHandlers.getDesk(desk, false);
+    publicHandlers.getDesk({ desk }, false);
   }
 
   async function reorderColumns(listId: number, order: number) {
     await listService.changeOrder(userSessionParams.deskId, listId, order);
     const desk = await deskService.searchDesk(userSessionParams.deskId, userSessionParams.wsId, true, null);
-    publicHandlers.getDesk(desk, false);
+    publicHandlers.getDesk({ desk }, false);
   }
 
   async function changeColumnName(listId: number, name: string) {

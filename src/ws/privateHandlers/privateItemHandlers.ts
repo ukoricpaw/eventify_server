@@ -14,7 +14,7 @@ export default function privateItemHandlers(
     if (secondList) {
       secondColumnList = await listRepository.findOneColumn(secondList);
     }
-    publicHandlers.changeColumn({ firstColumnlist, secondColumnList }, false);
+    publicHandlers.changeColumn({ list: firstColumnlist, secondList: secondColumnList }, false);
   }
 
   async function addNewItemToColumn(listId: number, name: string) {

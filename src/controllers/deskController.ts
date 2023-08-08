@@ -33,7 +33,7 @@ class DeskController {
     try {
       const { wsid, id } = req.params;
       const { delete_img } = req.body;
-      if (!req.files || !req.user) {
+      if (!req.user) {
         throw ApiError.BadRequest('Ошибка запроса');
       }
       let img;

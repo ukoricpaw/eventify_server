@@ -36,7 +36,7 @@ class ListItemService {
 
   async deleteListItem(deskId: number, listId: number, id: number, userId: number) {
     const item = await listItemRepository.findOneListItem(deskId, listId, id);
-    const items = await listItemRepository.findAllItems(deskId, listId, item.order);
+    const items = await listItemRepository.findAllItems(deskId, listId, item.order, false);
     if (items) {
       items.forEach(item => {
         item.order--;
@@ -57,7 +57,7 @@ class ListItemService {
       throw ApiError.BadRequest('Ошибка запроса');
     }
     if (order < item.order) {
-      const items = await listItemRepository.findAllItems(item.deskId, listId, order, item.order);
+      const items = await listItemRepository.findAllItems(item.deskId, listId, order, false, item.order);
       await Promise.all(
         items.map(async item => {
           item.order++;
@@ -65,7 +65,7 @@ class ListItemService {
         }),
       );
     } else if (order > item.order) {
-      const items = await listItemRepository.findAllItems(item.deskId, listId, item.order, order);
+      const items = await listItemRepository.findAllItems(item.deskId, listId, item.order, false, order);
       await Promise.all(
         items.map(async item => {
           item.order--;
@@ -78,8 +78,8 @@ class ListItemService {
   }
 
   async changeOrderToAnotherColumn(item: DeskListItemInstance, order: number, listId: number, secondListId: number) {
-    const anotherDeskListItems = await listItemRepository.findAllItems(item.deskId, secondListId, order);
-    const ownDeskListItems = await listItemRepository.findAllItems(item.deskId, listId, item.order);
+    const anotherDeskListItems = await listItemRepository.findAllItems(item.deskId, secondListId, order, true);
+    const ownDeskListItems = await listItemRepository.findAllItems(item.deskId, listId, item.order, false);
     if (anotherDeskListItems.length) {
       await Promise.all(
         anotherDeskListItems.map(async item => {

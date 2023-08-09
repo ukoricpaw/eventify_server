@@ -29,7 +29,7 @@ class ListItemService {
       infoType.type === 'name' ? 12 : infoType.type === 'description' ? 13 : 11,
       deskId,
       item.name,
-      infoType.type === 'deadline' ? infoType.content.toISOString() : infoType.content,
+      infoType.type === 'deadline' ? (infoType.content ? infoType.content.toISOString() : null) : infoType.content,
     );
     return item[infoType.type];
   }

@@ -1,18 +1,31 @@
 import { Server, Socket } from 'socket.io';
 
-export const emitErrorMessage = (socket: Socket) => (err: Error) => {
-  socket.emit('errorMessage', (err as Error).message ?? 'Произошла ошибка');
-};
+class EmitEventManager {
+  private socket: Socket;
+  private io: Server;
+  private roomId: number;
 
-export const emitEvent =
-  (socket: Socket, io: Server, roomId: number) => (event: string) => (body: any, socketRender: boolean) => {
+  constructor(socket: Socket, io: Server, roomId: number) {
+    this.socket = socket;
+    this.io = io;
+    this.roomId = roomId;
+  }
+
+  emitErrorMessage(err: Error) {
+    this.socket.emit('errorMessage', (err as Error).message ?? 'Произошла ошибка');
+  }
+
+  emitEvent = (event: string) => (body: any, socketRender: boolean) => {
     try {
       if (socketRender) {
-        io.in(String(roomId)).emit(event, body);
+        this.io.in(String(this.roomId)).emit(event, body);
       } else {
-        socket.to(String(roomId)).emit(event, body);
+        this.socket.to(String(this.roomId)).emit(event, body);
       }
     } catch (err) {
-      emitErrorMessage(socket)(err as Error);
+      this.emitErrorMessage(err as Error);
     }
   };
+}
+
+export default EmitEventManager;

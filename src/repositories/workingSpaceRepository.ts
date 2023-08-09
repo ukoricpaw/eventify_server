@@ -38,7 +38,7 @@ class WorkingSpaceRepository {
 
   async findSingleWorkingSpace(workingSpaceId: number, roleIsValid: boolean) {
     const excludeAttributes = ['createdAt', 'updatedAt', 'userId'];
-    if (roleIsValid) {
+    if (!roleIsValid) {
       excludeAttributes.push('inviteLink');
     }
     const workingSpace = await WorkingSpace.findOne({

@@ -50,7 +50,10 @@ export default function privateItemHandlers(
   }
 
   async function changeItemDeadline(listId: number, item: number, deadline: string) {
-    const date = new Date(deadline);
+    let date = null;
+    if (deadline) {
+      date = new Date(deadline);
+    }
     const newDeadline = await listItemService.changeItemInfo(
       { type: 'deadline', content: date },
       userSessionParams.deskId,

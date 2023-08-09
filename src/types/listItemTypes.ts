@@ -1,6 +1,6 @@
 type DeadlineType = {
   type: 'deadline';
-  content: Date;
+  content: Date | null;
 };
 
 type DescriptionType = {

@@ -83,7 +83,7 @@ class WorkingSpaceService {
     if (roleService.isRoleValid(workingSpaceRole)) {
       workingSpace = await workingSpaceRepository.findSingleWorkingSpace(workingSpaceId, true);
     } else {
-      workingSpace = await workingSpaceRepository.findSingleWorkingSpace(workingSpaceId, true);
+      workingSpace = await workingSpaceRepository.findSingleWorkingSpace(workingSpaceId, false);
     }
     if (!workingSpace) {
       throw ApiError.BadRequest('Ошибка запроса');

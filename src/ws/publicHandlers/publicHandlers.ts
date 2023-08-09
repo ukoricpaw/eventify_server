@@ -1,7 +1,6 @@
 import { Socket, Server } from 'socket.io';
-import { emitEvent } from './emitEvents.js';
+import EmitEventManager from './emitEvents.js';
 import { typesOfEmitHandlers, EmitEventsInterface } from './typesOfPublicHandlers.js';
-import { emitErrorMessage } from './emitEvents.js';
 
 export type GettingDeskType = {
   wsId: number;
@@ -26,15 +25,15 @@ export default function publicHandlers(
   socket: Socket,
   userSessionParams: GettingDeskType,
 ): EmitEventsInterface {
-  const eventWithDefaultConfiguration = emitEvent(socket, io, userSessionParams.deskId);
+  const emitEventInstance = new EmitEventManager(socket, io, userSessionParams.deskId);
   const emitHandlers = typesOfEmitHandlers.reduce(
     (result: EmitEventsInterface[HandlerProperties.EMIT_HANDLERS_NUMBER], emitHandler) => {
-      result[emitHandler.keyOfEmitEvent] = eventWithDefaultConfiguration(emitHandler.valueOfEmitEvent);
+      result[emitHandler.keyOfEmitEvent] = emitEventInstance.emitEvent(emitHandler.valueOfEmitEvent);
       return result;
     },
     {},
   );
-  const emitErrorHandler = emitErrorMessage(socket);
+  const emitErrorHandler = emitEventInstance.emitErrorMessage;
 
   return [emitErrorHandler, emitHandlers];
 }

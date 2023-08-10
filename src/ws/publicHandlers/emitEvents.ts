@@ -11,9 +11,9 @@ class EmitEventManager {
     this.roomId = roomId;
   }
 
-  emitErrorMessage(err: Error) {
+  emitErrorMessage = (err: Error) => {
     this.socket.emit('errorMessage', (err as Error).message ?? 'Произошла ошибка');
-  }
+  };
 
   emitEvent = (event: string) => (body: any, socketRender: boolean) => {
     try {

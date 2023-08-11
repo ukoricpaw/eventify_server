@@ -55,4 +55,8 @@ export const typesOfEmitHandlers: EmitEventHandlerType[] = [
     keyOfEmitEvent: 'provideNewItemDeadline',
     valueOfEmitEvent: 'item:newDeadline',
   },
+  {
+    keyOfEmitEvent: 'removeListItem',
+    valueOfEmitEvent: 'item:removeInList',
+  },
 ];

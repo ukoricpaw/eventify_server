@@ -64,7 +64,19 @@ export default function privateItemHandlers(
     publicHandlers.provideNewItemDeadline({ itemId: item, deadline: newDeadline as Date }, true);
   }
 
-  return { addNewItemToColumn, reorderItemsInColumns, changeItemName, changeItemDescription, changeItemDeadline };
+  async function deleteItem(listId: number, item: number) {
+    await listItemService.deleteListItem(userSessionParams.deskId, listId, item, userSessionParams.userId);
+    publicHandlers.removeListItem({ listId, itemId: item }, true);
+  }
+
+  return {
+    deleteItem,
+    addNewItemToColumn,
+    reorderItemsInColumns,
+    changeItemName,
+    changeItemDescription,
+    changeItemDeadline,
+  };
 }
 
 export type ItemHandlersType = ReturnType<typeof privateItemHandlers>;

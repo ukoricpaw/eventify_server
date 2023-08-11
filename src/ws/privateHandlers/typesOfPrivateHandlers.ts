@@ -85,5 +85,9 @@ function returnAllPrivateEvents(
       event: 'desk:description',
       handler: deskHandlers.changeDeskDescription,
     },
+    {
+      event: 'item:remove',
+      handler: itemHandlers.deleteItem,
+    },
   ];
 }

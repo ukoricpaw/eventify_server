@@ -94,12 +94,18 @@ class WorkingSpaceService {
     return { workingSpace, workingSpaceRole };
   }
 
-  async getAllWorkingSpaces(userId: number) {
-    const workingSpaces = await workingSpaceRepository.getAllWorkingSpacesByUserId(userId);
+  async getAllWorkingSpaces(userId: number, page: number, search: string) {
+    const parametersObject = {
+      userId,
+      limit: 10,
+      offset: page * 10 - 10,
+      search,
+    };
+    const workingSpaces = await workingSpaceRepository.getAllWorkingSpacesByUserId(parametersObject);
     return workingSpaces;
   }
 
-  async getAllPublicWorkingSpaces(offset: number, limit: number, search: string) {
+  async getAllUsersWorkingSpaces(offset: number, limit: number, search: string) {
     const workingSpaces = await workingSpaceRepository.getAllWorkingSpacesBySearch({
       offset,
       limit,
@@ -117,68 +123,6 @@ class WorkingSpaceService {
       isPrivate: true,
     });
     return workingSpaces;
-  }
-
-  async inviteUserToWS(userId: number, link: string) {
-    const workingSpace = await workingSpaceRepository.findByLink(link);
-    if (!workingSpace) {
-      throw ApiError.BadRequest('Некорректная ссылка');
-    }
-    const workingSpaceRole = await roleRepository.findByUserIdAndWorkingSpaceId({
-      workingSpaceId: workingSpace.id,
-      userId,
-      includeRoleInfo: false,
-    });
-    if (workingSpaceRole) {
-      throw ApiError.BadRequest('Вы уже являетесь участником данного рабочего пространства');
-    }
-    const roleId = getRoleId('READER');
-    await roleRepository.createRole(workingSpace.id, userId, roleId);
-    return { message: `Теперь Вы участник рабочего пространства - ${workingSpace.name}` };
-  }
-
-  async changePermission(wsId: number, ownerId: number, userId: number, roleId: number) {
-    const checkRoleRegEx = /[2-3]/g;
-    if (!roleId.toString().match(checkRoleRegEx)) {
-      throw ApiError.BadRequest('Такой роли не существует');
-    }
-    const checkOwnerRole = await roleRepository.findByUserIdAndWorkingSpaceId({
-      workingSpaceId: wsId,
-      userId: ownerId,
-      includeRoleInfo: false,
-    });
-    if (!checkOwnerRole || checkOwnerRole.roleId !== 1) {
-      throw ApiError.NoAccess('Нет доступа');
-    }
-    const userRole = await roleRepository.findByUserIdAndWorkingSpaceId({
-      workingSpaceId: wsId,
-      userId,
-      includeRoleInfo: false,
-    });
-    if (!userRole) {
-      throw ApiError.BadRequest('Пользователь не является участником рабочего пространства');
-    }
-    userRole.roleId = roleId;
-    await userRole.save();
-    return { message: 'Роль была изменена' };
-  }
-
-  async getAllWSUsers(wsId: number, reqUserId: number | null, offset: number, limit: number, search: string) {
-    let userId = reqUserId;
-    if (!userId) {
-      userId = -1;
-    }
-    const wsRole = await roleRepository.findByUserIdAndWorkingSpaceId({
-      workingSpaceId: wsId,
-      userId,
-      includeRoleInfo: false,
-    });
-    const ws = await workingSpaceRepository.findByWorkingSpaceId(wsId);
-    if (!ws || (!wsRole && ws.private)) {
-      throw ApiError.BadRequest('Нет доступа');
-    }
-    const users = await workingSpaceRepository.getAllWorkingSpaceUsers(wsId, search, limit, offset);
-    return users;
   }
 }
 

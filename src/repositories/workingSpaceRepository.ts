@@ -1,9 +1,10 @@
-import WorkingSpace from '../models/WorkingSpace.js';
+import WorkingSpace, { WorkingSpaceInstance } from '../models/WorkingSpace.js';
 import Desk from '../models/Desk.js';
 import User from '../models/User.js';
 import WorkingSpaceRole from '../models/WorkingSpaceRole.js';
-import { Op } from 'sequelize';
+import { Attributes, FindAndCountOptions, Op } from 'sequelize';
 import Role from '../models/Role.js';
+import ApiError from '../error/ApiError.js';
 
 class WorkingSpaceRepository {
   userAttributes = {
@@ -22,6 +23,9 @@ class WorkingSpaceRepository {
 
   async findByLink(inviteLink: string) {
     const data = await WorkingSpace.findOne({ where: { inviteLink } });
+    if (!data) {
+      throw ApiError.BadRequest('Некорректная ссылка');
+    }
     return data;
   }
 
@@ -58,10 +62,25 @@ class WorkingSpaceRepository {
     return workingSpace;
   }
 
-  async getAllWorkingSpacesByUserId(userId: number) {
-    const workingSpaces = WorkingSpace.findAndCountAll({
+  getOptionsForAllWorkingSpacesBySearch({
+    userId,
+    search,
+    limit,
+    offset,
+  }: {
+    userId: number;
+    search: string;
+    limit: number;
+    offset: number;
+  }): Omit<FindAndCountOptions<Attributes<WorkingSpaceInstance>>, 'group'> {
+    return {
       attributes: {
         exclude: ['updatedAt', 'description', 'private', 'inviteLink', 'createdAt'],
+      },
+      where: {
+        name: {
+          [Op.like]: `%${search}%`,
+        },
       },
       include: [
         {
@@ -76,8 +95,47 @@ class WorkingSpaceRepository {
         },
       ],
       order: [['id', 'ASC']],
-    });
+      limit,
+      offset,
+    };
+  }
+
+  async getAllWorkingSpacesByUserId({
+    userId,
+    search,
+    limit,
+    offset,
+  }: {
+    userId: number;
+    search: string;
+    limit: number;
+    offset: number;
+  }) {
+    const workingSpaces = await WorkingSpace.findAndCountAll(
+      this.getOptionsForAllWorkingSpacesBySearch({ userId, limit, offset, search }),
+    );
     return workingSpaces;
+  }
+
+  async checkCountOfAllWorkingSpacesByUserId(userId: number) {
+    const count = await WorkingSpace.count({
+      include: [
+        {
+          model: WorkingSpaceRole,
+          as: 'working_space_roles',
+          where: {
+            userId,
+            roleId: {
+              [Op.ne]: 1,
+            },
+          },
+        },
+      ],
+    });
+    if (count > 4) {
+      throw ApiError.BadRequest('Превышен лимит рабочих пространств');
+    }
+    return count;
   }
 
   async getAllWorkingSpacesBySearch({

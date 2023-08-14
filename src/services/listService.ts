@@ -94,7 +94,6 @@ class ListService {
 
   async changeOrder(deskId: number, listId: number, order: number) {
     const list = await listRepository.findOneByDeskIdAndListId(deskId, listId);
-    console.log(list.order, order);
     if (list.order === order) {
       throw ApiError.BadRequest('Ошибка запроса');
     }

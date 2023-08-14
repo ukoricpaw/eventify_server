@@ -10,7 +10,7 @@ interface WorkingSpaceAttributes {
   inviteLink: string;
 }
 
-interface WorkingSpaceInstance
+export interface WorkingSpaceInstance
   extends Model<WorkingSpaceAttributes, Optional<WorkingSpaceAttributes, 'id'>>,
     WorkingSpaceAttributes {
   createdAt?: Date;

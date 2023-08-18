@@ -28,7 +28,12 @@ export default function privateDeskHandlers(
     publicHandlers.provideNewDeskDescription(deskDescription ?? null, true);
   }
 
-  return { changeDeskDescription, changeDeskName };
+  async function deleteDesk(deskId: number) {
+    const message = await deskService.deleteDesk(userSessionParams.wsId, deskId, userSessionParams.userId);
+    publicHandlers.provideMessageAboutDeletedDesk(message, true);
+  }
+
+  return { changeDeskDescription, changeDeskName, deleteDesk };
 }
 
 export type DeskHandlersType = ReturnType<typeof privateDeskHandlers>;

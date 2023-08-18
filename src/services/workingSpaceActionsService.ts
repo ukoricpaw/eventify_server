@@ -2,8 +2,6 @@ import ApiError from '../error/ApiError.js';
 import workingSpaceRepository from '../repositories/workingSpaceRepository.js';
 import getRoleId from '../utils/getRoleId.js';
 import roleRepository from '../repositories/roleRepository.js';
-import WorkingSpaceRole from '../models/WorkingSpaceRole.js';
-import WorkingSpace from '../models/WorkingSpace.js';
 
 class WorkingSpaceActionsService {
   async inviteUserToWS(userId: number, link: string) {

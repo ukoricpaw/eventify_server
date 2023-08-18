@@ -86,6 +86,10 @@ function returnAllPrivateEvents(
       handler: deskHandlers.changeDeskDescription,
     },
     {
+      event: 'desk:delete',
+      handler: deskHandlers.deleteDesk,
+    },
+    {
       event: 'item:remove',
       handler: itemHandlers.deleteItem,
     },

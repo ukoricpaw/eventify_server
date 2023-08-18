@@ -40,6 +40,10 @@ export const typesOfEmitHandlers: EmitEventHandlerType[] = [
     valueOfEmitEvent: 'desk:newName',
   },
   {
+    keyOfEmitEvent: 'provideMessageAboutDeletedDesk',
+    valueOfEmitEvent: 'desk:deleted',
+  },
+  {
     keyOfEmitEvent: 'provideNewDeskDescription',
     valueOfEmitEvent: 'desk:newDescription',
   },

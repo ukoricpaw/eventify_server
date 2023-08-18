@@ -1,22 +1,21 @@
 import { Request, Response, NextFunction } from 'express';
 import userService from '../services/userService.js';
 import ApiError from '../error/ApiError.js';
-import { validationResult } from 'express-validator';
 import mailService from '../services/mailService.js';
 import tokenService from '../services/tokenService.js';
 import { ReqWithUserPayload } from '../middlewares/checkAuthMiddleware.js';
 import { UploadedFile } from 'express-fileupload';
+import { checkValidationResultOfEmailAndPassword } from '../utils/checkValidationResultOfEmailAndPassword.js';
+import { setTokensToCookiesInResponse } from '../utils/setTokensToCookies.js';
+import { clearCookieInResponse } from '../utils/clearCookieInResponse.js';
+import { checkRefreshTokenIfIsEmptyThrowException } from '../utils/checkRefreshTokenIfIsEmptyThrowException.js';
 class UserController {
   public async registration(req: Request, res: Response, next: NextFunction) {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        throw ApiError.BadRequest('Некорректные данные');
-      }
+      checkValidationResultOfEmailAndPassword(req);
       const { email, password, role } = req.body;
       const tokenData = await userService.registration(email, password, role);
-      res.cookie('refreshToken', tokenData.refreshToken, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true });
-      res.cookie('accessToken', tokenData.accessToken, { maxAge: 60 * 15 * 1000, httpOnly: true });
+      setTokensToCookiesInResponse(res, { refreshToken: tokenData.refreshToken, accessToken: tokenData.accessToken });
       res.json(tokenData);
     } catch (err) {
       next(err);
@@ -64,24 +63,18 @@ class UserController {
         throw ApiError.BadRequest('Некорректные данные');
       }
       const tokenData = await userService.login(email, password);
-      res.cookie('refreshToken', tokenData.refreshToken, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true });
-      res.cookie('accessToken', tokenData.accessToken, { maxAge: 60 * 15 * 1000, httpOnly: true });
+      setTokensToCookiesInResponse(res, { refreshToken: tokenData.refreshToken, accessToken: tokenData.accessToken });
       res.json(tokenData);
     } catch (err) {
-      console.log(err);
       next(err);
     }
   }
 
   public async refresh(req: Request, res: Response, next: NextFunction) {
     try {
-      const refreshToken = req.cookies.refreshToken;
-      if (!refreshToken) {
-        throw ApiError.NotAuthorized('Ошибка запроса');
-      }
+      const refreshToken = checkRefreshTokenIfIsEmptyThrowException(req.cookies);
       const tokenData = await tokenService.refresh(refreshToken);
-      res.cookie('refreshToken', tokenData.refreshToken, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true });
-      res.cookie('accessToken', tokenData.accessToken, { maxAge: 60 * 15 * 1000, httpOnly: true });
+      setTokensToCookiesInResponse(res, { refreshToken: tokenData.refreshToken, accessToken: tokenData.accessToken });
       res.json(tokenData);
     } catch (err) {
       next(err);
@@ -90,13 +83,9 @@ class UserController {
 
   public async logout(req: Request, res: Response, next: NextFunction) {
     try {
-      const refreshToken = req.cookies.refreshToken;
-      if (!refreshToken) {
-        throw ApiError.NotAuthorized('Ошибка запроса');
-      }
+      const refreshToken = checkRefreshTokenIfIsEmptyThrowException(req.cookies);
       const message = await tokenService.deleteToken(refreshToken);
-      res.clearCookie('refreshToken');
-      res.clearCookie('accessToken');
+      clearCookieInResponse(res);
       res.json(message);
     } catch (err) {
       next(err);
@@ -106,10 +95,7 @@ class UserController {
   public async changePassword(req: ReqWithUserPayload, res: Response, next: NextFunction) {
     try {
       const { oldPassword, newPassword } = req.body;
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        throw ApiError.BadRequest('Некорректно ввёденные данные');
-      }
+      checkValidationResultOfEmailAndPassword(req);
       if (!oldPassword || !newPassword || !req.user) {
         throw ApiError.BadRequest('Некорректные данные');
       }
